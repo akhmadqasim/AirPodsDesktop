@@ -1023,6 +1023,9 @@ void AirPodsDomainTests::PresentsMainWindowDeviceState()
     QCOMPARE(presentation.leftBattery.badge, Gui::BatteryBadge::Left);
     QCOMPARE(presentation.rightBattery.badge, Gui::BatteryBadge::Right);
     QVERIFY(!presentation.caseBattery.visible);
+
+    // Like iOS, the sheet is informational only; no button while the pods are elsewhere.
+    QCOMPARE(presentation.buttonAction, Gui::ButtonAction::NoButton);
 }
 
 void AirPodsDomainTests::MergesMatchingPodBatteries()

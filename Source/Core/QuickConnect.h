@@ -107,6 +107,8 @@ public:
     std::vector<Device> Devices();
     void RefreshDevices();
     Outcome Request();
+    // Same as `Request()` for a device the caller names, regardless of the tray-click setting.
+    Outcome RequestDevice(const QString &deviceId);
     Outcome OnEndpointStateChanged(const QString &id, bool connected);
     Outcome ResolveTimedOut();
 

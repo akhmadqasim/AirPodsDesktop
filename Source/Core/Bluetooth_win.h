@@ -57,6 +57,7 @@ public:
     uint16_t GetVendorId() const override;
     uint16_t GetProductId() const override;
     DeviceState GetConnectionState() const override;
+    winrt::hstring GetAepId() const;
 
 private:
     constexpr static auto kPropertyBluetoothVendorId = L"System.DeviceInterface.Bluetooth.VendorId";
@@ -93,8 +94,6 @@ private:
         }
         return defaultValue;
     }
-
-    winrt::hstring GetAepId() const;
 
     void OnConnectionStatusChanged(const WinrtBluetooth::BluetoothDevice &sender);
     void OnNameChanged(const WinrtBluetooth::BluetoothDevice &sender);

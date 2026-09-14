@@ -28,6 +28,15 @@
 
 namespace Core::AirPods {
 
+QString Manager::BoundDeviceContainerId()
+{
+    std::lock_guard<std::mutex> lock{_mutex};
+    if (!_boundDevice.has_value()) {
+        return {};
+    }
+    return QString::fromWCharArray(_boundDevice->GetAepId().c_str());
+}
+
 QString Details::ResolveDisplayName(QString deviceName, Model model)
 {
     deviceName.remove(" - Find My");
@@ -123,8 +132,8 @@ void Manager::StartScanner()
 {
     {
         std::lock_guard<std::mutex> lock{_mutex};
-        if (!_boundDevice.has_value() || !_deviceConnected) {
-            LOG(Info, "Skip Bluetooth AdvWatcher start because the bound device is disconnected.");
+        if (!_boundDevice.has_value()) {
+            LOG(Info, "Skip Bluetooth AdvWatcher start because no device is bound.");
             return;
         }
         if (_aapLinkUp) {
@@ -310,24 +319,24 @@ void Manager::OnBoundDeviceConnectionStateChanged(Bluetooth::DeviceState state)
     _deviceConnected = newDeviceConnected;
     emit DeviceConnectionChanged(newDeviceConnected);
 
-    QMetaObject::invokeMethod(
-        this,
-        [this, newDeviceConnected] {
-            if (newDeviceConnected) {
-                StartScanner();
-            }
-            else {
-                StopScanner();
-            }
-        },
-        Qt::QueuedConnection);
+    // The scanner keeps running across link changes: with the pods on another device the popup
+    // still shows their state and offers to connect. AAP (when up) stops it instead.
+    QMetaObject::invokeMethod(this, [this] { StartScanner(); }, Qt::QueuedConnection);
 
     if (doDisconnect) {
-        _stateMgr.Disconnect();
         _earDetection.Reset();
         if (_aapStatePublished) {
+            // The AAP-built state dies with the link; BLE rebuilds one within a few seconds.
             _aapStatePublished = false;
             QMetaObject::invokeMethod(this, [this] { emit Disconnected(); }, Qt::QueuedConnection);
+        }
+    }
+
+    if (oldDeviceConnected != newDeviceConnected) {
+        // Re-announce the current state so the popup's connect button follows the link.
+        auto current = _aapState.has_value() ? _aapState : _stateMgr.GetCurrentState();
+        if (current.has_value()) {
+            OnStateChanged({current, *current});
         }
     }
 
@@ -341,6 +350,7 @@ void Manager::OnStateChanged(Details::StateManager::UpdateEvent updateEvent)
     auto &newState = updateEvent.newState;
 
     newState.displayName = Details::ResolveDisplayName(_deviceName, newState.model);
+    newState.isConnected = _deviceConnected;
 
     emit StateUpdated(newState);
 
@@ -375,6 +385,10 @@ void Manager::OnBothInEar(bool isBothInEar)
         LOG(Info, "automatic_ear_detection: Do nothing because it is disabled. ({})", isBothInEar);
         return;
     }
+    if (!_deviceConnected) {
+        LOG(Info, "automatic_ear_detection: Do nothing because the pods are on another device.");
+        return;
+    }
 
     LOG(Info, "automatic_ear_detection: bothInEar changed to {}", isBothInEar);
 
@@ -393,11 +407,6 @@ bool Manager::OnAdvertisementReceived(const Bluetooth::AdvertisementWatcher::Rec
     }
 
     Details::Advertisement adv{data};
-
-    if (!_deviceConnected) {
-        LOG(Info, "AirPods advertisement received, but device disconnected.");
-        return false;
-    }
 
     if (_aapLinkUp) {
         LOG(Trace, "Ignore advertisement while AAP owns the state.");

@@ -172,13 +172,24 @@ Outcome Controller::Request()
         return Outcome::Disabled;
     }
 
-    if (_deviceId.isEmpty()) {
+    return RequestDevice(_deviceId);
+}
+
+Outcome Controller::RequestDevice(const QString &deviceId)
+{
+    if (_pending || _requestRunning) {
+        EmitOutcome(Outcome::RequestStarted, _pending ? _pendingDeviceName
+                                                      : DeviceNameFor(_requestingDeviceId));
+        return Outcome::RequestStarted;
+    }
+
+    if (deviceId.isEmpty()) {
         EmitOutcome(Outcome::NoDevice, {});
         return Outcome::NoDevice;
     }
 
     _requestRunning = true;
-    _requestingDeviceId = _deviceId;
+    _requestingDeviceId = deviceId;
     _connectedDuringRequest = false;
 
     if (_requestThread.joinable()) {
@@ -189,11 +200,11 @@ Outcome Controller::Request()
 
     _requestThread =
         std::thread{[backend = _backend, link = _link, stopToken = _requestStop.get_token(),
-                     requestedDeviceId = _deviceId]() {
+                     requestedDeviceId = deviceId]() {
             const auto devices = backend->ListDevices(stopToken);
             const auto deviceIter =
                 std::find_if(devices.begin(), devices.end(), [&](const Device &device) {
-                    return device.id == requestedDeviceId;
+                    return NormalizeId(device.id) == NormalizeId(requestedDeviceId);
                 });
 
             auto outcome = Outcome::DeviceUnavailable;

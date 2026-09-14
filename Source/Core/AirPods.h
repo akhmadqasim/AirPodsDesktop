@@ -75,6 +75,9 @@ struct State {
     PodsState pods;
     CaseState caseBox;
     QString displayName;
+    // Whether the classic Bluetooth link to this PC is up. BLE advertisements arrive either way,
+    // so the popup can offer to connect while the pods are on another device.
+    bool isConnected{false};
 
     bool operator==(const State &rhs) const = default;
 };
@@ -210,6 +213,9 @@ public:
     void OnRssiMinChanged(int16_t rssiMin);
     void OnAutomaticEarDetectionChanged(bool enable);
     void OnBoundDeviceAddressChanged(uint64_t address);
+
+    // Container id of the bound device, the key `QuickConnect` uses; empty when nothing is bound.
+    QString BoundDeviceContainerId();
 
     // AAP (see `Core::Aap::Client`) reports battery and in-ear changes immediately, while BLE
     // advertisements lag by seconds and need the scanner, which competes with A2DP for the radio.

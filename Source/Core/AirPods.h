@@ -53,6 +53,8 @@ struct BasicState {
 
 struct PodState : Details::BasicState {
     bool isInEar{false};
+    // BLE only knows "both in case"; AAP reports each pod, which tells one-out from both-out.
+    bool isInCase{false};
 
     bool operator==(const PodState &rhs) const = default;
 };

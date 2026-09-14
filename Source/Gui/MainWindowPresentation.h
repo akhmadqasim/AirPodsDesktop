@@ -33,6 +33,18 @@ enum class BatteryBadge : uint32_t {
     Case,
 };
 
+// What the sheet shows, following iOS:
+//   PodsInCase   both pods rest in the open case: turntable render, merged ring + case ring
+//   OnePodOut    one pod taken out: still render, L/R rings + case ring
+//   BothPodsOut  both taken out: keeps turning for a while
+//   PodsOnly     after that: pods without the case, still, a single ring for the pair
+enum class Scene : uint32_t {
+    PodsInCase,
+    OnePodOut,
+    BothPodsOut,
+    PodsOnly,
+};
+
 struct BatteryPresentation {
     bool visible{false};
     bool charging{false};
@@ -46,8 +58,7 @@ struct MainWindowPresentation {
     QString title;
     ButtonAction buttonAction{ButtonAction::NoButton};
     std::optional<Core::AirPods::Model> animationModel;
-    // Pods drawn next to each other while both sit in the case, apart otherwise.
-    bool podsTogether{false};
+    Scene scene{Scene::PodsInCase};
     BatteryPresentation leftBattery;
     BatteryPresentation rightBattery;
     BatteryPresentation caseBattery;
@@ -67,6 +78,9 @@ class MainWindowViewModel
 {
 public:
     void UpdateState(const Core::AirPods::State &state);
+    // The window decides when "both out" has lasted long enough to drop the case.
+    void SetPodsOnly(bool podsOnly);
+    bool IsPodsOnly() const;
     void Available();
     void Unavailable();
     void Disconnect();
@@ -78,6 +92,7 @@ public:
 private:
     Status _status{Status::Unavailable};
     std::optional<Core::AirPods::State> _state;
+    bool _podsOnly{false};
 };
 
 AnimationPresentation GetAnimationPresentation(Core::AirPods::Model model);

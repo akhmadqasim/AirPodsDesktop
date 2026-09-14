@@ -90,8 +90,9 @@ std::optional<State> Details::BuildAapState(Model model, const AapSnapshot &snap
         const auto rightEar = primaryIsLeft ? ear.secondary : ear.primary;
         state.pods.left.isInEar = leftEar == EarState::InEar;
         state.pods.right.isInEar = rightEar == EarState::InEar;
-        state.caseBox.isBothPodsInCase =
-            leftEar == EarState::InCase && rightEar == EarState::InCase;
+        state.pods.left.isInCase = leftEar == EarState::InCase;
+        state.pods.right.isInCase = rightEar == EarState::InCase;
+        state.caseBox.isBothPodsInCase = state.pods.left.isInCase && state.pods.right.isInCase;
         state.caseBox.isLidOpened = state.caseBox.isBothPodsInCase;
     }
     return state;

@@ -57,6 +57,8 @@ Advertisement::Advertisement(const Bluetooth::AdvertisementWatcher::ReceivedData
     _state.caseBox.isCharging = _protocol.IsCaseCharging();
     _state.caseBox.isBothPodsInCase = _protocol.IsBothPodsInCase();
     _state.caseBox.isLidOpened = _protocol.IsLidOpened();
+    _state.pods.left.isInCase = _state.caseBox.isBothPodsInCase;
+    _state.pods.right.isInCase = _state.caseBox.isBothPodsInCase;
 
     if (_state.pods.left.battery.Available()) {
         _state.pods.left.battery = _state.pods.left.battery.Value() * 10;

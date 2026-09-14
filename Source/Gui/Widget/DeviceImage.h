@@ -54,6 +54,7 @@ public:
     enum class Arrangement {
         Spread,
         Together,
+        PodsOnly, // the case is left out and the pods take the middle
     };
     Q_ENUM(Arrangement)
 
@@ -91,11 +92,15 @@ private:
     Arrangement _arrangement{Arrangement::Spread};
     QImage _current;
     QImage _previous;
+    // `_current`/`_previous` fitted to the widget, so a fade frame is two cheap blits.
+    mutable QImage _currentScaled;
+    mutable QImage _previousScaled;
     QVariantAnimation _fade{this};
 
     void Recompose(bool animate);
     QImage Compose(Arrangement arrangement) const;
-    void DrawFitted(QPainter &painter, const QImage &image, qreal opacity) const;
+    void DrawFitted(QPainter &painter, const QImage &image, QImage &scaledCache, qreal opacity) const;
+    void resizeEvent(QResizeEvent *event) override;
 };
 
 } // namespace Gui::Widget

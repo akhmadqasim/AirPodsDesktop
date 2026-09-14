@@ -94,6 +94,8 @@ private:
     AnimationPlayback *_playback;
     Widget::DeviceImage *_deviceImage;
     bool _rotating{false};
+    // Both pods out: the render keeps turning this long, then the case leaves the picture.
+    QTimer *_podsOnlyTimer = new QTimer{this};
     QTimer *_autoHideTimer = new QTimer{this};
     // Caps how long an opened lid may keep the popup up, in case the state stops updating.
     QTimer *_lidSafetyTimer = new QTimer{this};
@@ -121,6 +123,7 @@ private:
     void StopAnimation();
     void FadeInBattery(Widget::Battery *widget);
     void SetRotating(bool rotating);
+    void ApplyScene(Scene scene);
     void BindDevice();
     void ShowDeviceSelector(std::vector<Core::Bluetooth::Device> devices);
     void ControlAutoHideTimer(bool start);

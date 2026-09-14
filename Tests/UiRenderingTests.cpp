@@ -249,6 +249,15 @@ private Q_SLOTS:
         QVERIFY(togetherPodEdge > spreadPodEdge);
         QCOMPARE(togetherCaseEdge, spreadCaseEdge);
 
+        // Pods only: the case is gone, the pair sits in the middle.
+        image.SetArrangement(Gui::Widget::DeviceImage::Arrangement::PodsOnly, false);
+        const auto podsOnly = image.CurrentComposition();
+        const auto podsOnlySlices = Gui::Widget::Detail::SliceByTransparentGaps(podsOnly, 2).slices;
+        QCOMPARE(podsOnlySlices.size(), size_t{2});
+        const int centre = (podsOnlySlices.front().left + podsOnlySlices.back().right) / 2;
+        QVERIFY(std::abs(centre - podsOnly.width() / 2) <= 2);
+        image.SetArrangement(Gui::Widget::DeviceImage::Arrangement::Together, false);
+
         // Back to spread with animation: a cross-fade runs while visible.
         image.show();
         image.SetArrangement(Gui::Widget::DeviceImage::Arrangement::Spread, true);
@@ -275,6 +284,7 @@ private Q_SLOTS:
         state.caseBox.battery = Core::AirPods::Battery{100};
         state.caseBox.isCharging = true;
         state.caseBox.isBothPodsInCase = true;
+        state.pods.left.isInCase = state.pods.right.isInCase = true;
         state.caseBox.isLidOpened = true;
         window.UpdateState(state);
 

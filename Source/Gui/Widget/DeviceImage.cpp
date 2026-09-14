@@ -80,13 +80,14 @@ ImageSlices SliceByTransparentGaps(const QImage &image, int minGap)
 DeviceImage::DeviceImage(QWidget *parent) : QWidget{parent}
 {
     setAttribute(Qt::WA_TranslucentBackground);
-    _fade.setDuration(600);
-    _fade.setEasingCurve(QEasingCurve::InOutCubic);
+    _fade.setDuration(800);
+    _fade.setEasingCurve(QEasingCurve::InOutSine);
     _fade.setStartValue(0.0);
     _fade.setEndValue(1.0);
     connect(&_fade, &QVariantAnimation::valueChanged, this, [this] { update(); });
     connect(&_fade, &QVariantAnimation::finished, this, [this] {
         _previous = {};
+        _previousScaled = {};
         update();
     });
 }
@@ -125,6 +126,8 @@ void DeviceImage::SetSource(QImage image)
     _fade.stop();
     _previous = {};
     _current = Compose(_arrangement);
+    _previousScaled = {};
+    _currentScaled = {};
     update();
 }
 
@@ -152,10 +155,12 @@ void DeviceImage::CrossFadeFrom(QImage previous)
     _fade.stop();
     if (previous.isNull() || _current.isNull()) {
         _previous = {};
+        _previousScaled = {};
         update();
         return;
     }
     _previous = std::move(previous);
+    _previousScaled = {};
     _fade.start();
     update();
 }
@@ -176,14 +181,18 @@ void DeviceImage::Recompose(bool animate)
     }
     if (animate && isVisible()) {
         _previous = _current;
+        _previousScaled = _currentScaled;
         _current = std::move(next);
+        _currentScaled = {};
         _fade.stop();
         _fade.start();
     }
     else {
         _fade.stop();
         _previous = {};
+        _previousScaled = {};
         _current = std::move(next);
+        _currentScaled = {};
     }
     update();
 }
@@ -197,30 +206,53 @@ QImage DeviceImage::Compose(Arrangement arrangement) const
         return _source;
     }
 
-    // Together: the pods slide towards each other until only a sliver of the gap is left.
     const auto &parts = *_parts;
-    const int shift = (std::max)(parts.podGap * 2 / 5, 0);
-
     QImage composed{_source.size(), QImage::Format_ARGB32};
     composed.fill(Qt::transparent);
     QPainter painter{&composed};
+
+    if (arrangement == Arrangement::PodsOnly) {
+        // Case gone, the pair centred where the whole render used to be.
+        const int pairWidth = parts.rightPodPos.x() + parts.rightPod.width() - parts.leftPodPos.x();
+        const int offset = (_source.width() - pairWidth) / 2 - parts.leftPodPos.x();
+        painter.drawImage(parts.leftPodPos + QPoint{offset, 0}, parts.leftPod);
+        painter.drawImage(parts.rightPodPos + QPoint{offset, 0}, parts.rightPod);
+        return composed;
+    }
+
+    // Together: the pods slide towards each other until only a sliver of the gap is left.
+    const int shift = (std::max)(parts.podGap * 2 / 5, 0);
     painter.drawImage(parts.restPos, parts.rest);
     painter.drawImage(parts.leftPodPos + QPoint{shift, 0}, parts.leftPod);
     painter.drawImage(parts.rightPodPos - QPoint{shift, 0}, parts.rightPod);
     return composed;
 }
 
-void DeviceImage::DrawFitted(QPainter &painter, const QImage &image, qreal opacity) const
+void DeviceImage::DrawFitted(
+    QPainter &painter, const QImage &image, QImage &scaledCache, qreal opacity) const
 {
     if (image.isNull() || opacity <= 0.0) {
         return;
     }
-    const QSizeF fitted = QSizeF{image.size()}.scaled(size(), Qt::KeepAspectRatio);
-    const QRectF target{
-        (width() - fitted.width()) / 2.0, (height() - fitted.height()) / 2.0, fitted.width(),
-        fitted.height()};
+
+    const qreal dpr = devicePixelRatioF();
+    const QSize fitted = image.size().scaled(size() * dpr, Qt::KeepAspectRatio);
+    if (scaledCache.isNull() || scaledCache.size() != fitted || scaledCache.cacheKey() == 0) {
+        scaledCache = image.scaled(fitted, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        scaledCache.setDevicePixelRatio(dpr);
+    }
+
+    const QSizeF logical = QSizeF{fitted} / dpr;
+    const QPointF topLeft{(width() - logical.width()) / 2.0, (height() - logical.height()) / 2.0};
     painter.setOpacity(opacity);
-    painter.drawImage(target, image);
+    painter.drawImage(topLeft, scaledCache);
+}
+
+void DeviceImage::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    _currentScaled = {};
+    _previousScaled = {};
 }
 
 void DeviceImage::paintEvent(QPaintEvent *)
@@ -230,11 +262,11 @@ void DeviceImage::paintEvent(QPaintEvent *)
 
     if (IsFading()) {
         const qreal t = _fade.currentValue().toReal();
-        DrawFitted(painter, _previous, 1.0 - t);
-        DrawFitted(painter, _current, t);
+        DrawFitted(painter, _previous, _previousScaled, 1.0 - t);
+        DrawFitted(painter, _current, _currentScaled, t);
     }
     else {
-        DrawFitted(painter, _current, 1.0);
+        DrawFitted(painter, _current, _currentScaled, 1.0);
     }
 }
 

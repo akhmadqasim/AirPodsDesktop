@@ -196,6 +196,12 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
     _lidSafetyTimer->setObjectName("lidSafetyTimer");
     _lidSafetyTimer->setSingleShot(true);
     _lidSafetyTimer->callOnTimeout([this] { DoHide(); });
+    _podsOnlyTimer->setObjectName("podsOnlyTimer");
+    _podsOnlyTimer->setSingleShot(true);
+    _podsOnlyTimer->callOnTimeout([this] {
+        _viewModel.SetPodsOnly(true);
+        Repaint();
+    });
 
     _ui.layoutAnimation->addWidget(_animationView);
     _ui.layoutAnimation->addWidget(_deviceImage);
@@ -219,8 +225,8 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
         effect->setOpacity(1.0);
         battery->setGraphicsEffect(effect);
         auto *fade = new QPropertyAnimation{effect, "opacity", this};
-        fade->setDuration(600);
-        fade->setEasingCurve(QEasingCurve::InOutCubic);
+        fade->setDuration(800);
+        fade->setEasingCurve(QEasingCurve::InOutSine);
         fade->setStartValue(0.0);
         fade->setEndValue(1.0);
         _batteryFades[battery] = fade;
@@ -283,6 +289,8 @@ void MainWindow::Disconnect()
 {
     LOG(Info, "MainWindow::Disconnect");
 
+    _viewModel.SetPodsOnly(false);
+    _podsOnlyTimer->stop();
     _viewModel.Disconnect();
     Repaint();
     _holdForOpenLid = false;
@@ -415,6 +423,32 @@ void MainWindow::StopAnimation()
     _playback->SetActive(false);
     _animationView->hide();
     _deviceImage->hide();
+}
+
+void MainWindow::ApplyScene(Scene scene)
+{
+    using Arrangement = Widget::DeviceImage::Arrangement;
+
+    switch (scene) {
+    case Scene::BothPodsOut:
+        if (!_podsOnlyTimer->isActive()) {
+            _podsOnlyTimer->start(15s);
+        }
+        break;
+    case Scene::PodsOnly:
+        _podsOnlyTimer->stop();
+        break;
+    default:
+        _podsOnlyTimer->stop();
+        if (_viewModel.IsPodsOnly()) {
+            _viewModel.SetPodsOnly(false);
+        }
+        break;
+    }
+
+    _deviceImage->SetArrangement(
+        scene == Scene::PodsOnly ? Arrangement::PodsOnly : Arrangement::Spread, _isVisible);
+    SetRotating(scene == Scene::PodsInCase || scene == Scene::BothPodsOut);
 }
 
 void MainWindow::SetRotating(bool rotating)
@@ -564,7 +598,7 @@ void MainWindow::Repaint()
     FitDeviceLabelFont(presentation.title);
     ChangeButtonAction(presentation.buttonAction);
     SetAnimation(presentation.animationModel);
-    SetRotating(presentation.podsTogether);
+    ApplyScene(presentation.scene);
 
     const auto applyBattery = [this](Widget::Battery *widget, const BatteryPresentation &battery) {
         if (!battery.visible) {

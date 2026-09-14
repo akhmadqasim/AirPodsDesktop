@@ -38,6 +38,16 @@ void MainWindowViewModel::UpdateState(const Core::AirPods::State &state)
     _state = state;
 }
 
+void MainWindowViewModel::SetPodsOnly(bool podsOnly)
+{
+    _podsOnly = podsOnly;
+}
+
+bool MainWindowViewModel::IsPodsOnly() const
+{
+    return _podsOnly;
+}
+
 void MainWindowViewModel::Available()
 {
     if (_status == Status::Unavailable) {
@@ -97,22 +107,51 @@ MainWindowPresentation MainWindowViewModel::Present() const
 
     result.title = _state->displayName;
     result.animationModel = _state->model;
-    result.podsTogether = _state->caseBox.isBothPodsInCase;
+
+    const int podsInCase = (_state->pods.left.isInCase ? 1 : 0) + (_state->pods.right.isInCase ? 1 : 0);
+    if (podsInCase == 2) {
+        result.scene = Scene::PodsInCase;
+    }
+    else if (podsInCase == 1) {
+        result.scene = Scene::OnePodOut;
+    }
+    else {
+        result.scene = _podsOnly ? Scene::PodsOnly : Scene::BothPodsOut;
+    }
+
     result.leftBattery = PresentBattery(_state->pods.left, BatteryBadge::Left);
     result.rightBattery = PresentBattery(_state->pods.right, BatteryBadge::Right);
     result.caseBattery = PresentBattery(_state->caseBox, BatteryBadge::Case);
 
     // iOS collapses the pods into one unlabelled ring while they report the same thing, and
     // drops the case glyph too once both pods sit in the case (nothing left to tell apart).
-    if (result.leftBattery.visible && result.rightBattery.visible &&
-        result.leftBattery.value == result.rightBattery.value &&
-        result.leftBattery.charging == result.rightBattery.charging)
-    {
+    const bool matchingPods = result.leftBattery.visible && result.rightBattery.visible &&
+                              result.leftBattery.value == result.rightBattery.value &&
+                              result.leftBattery.charging == result.rightBattery.charging;
+    if (matchingPods) {
         result.leftBattery = {};
         result.rightBattery.badge = BatteryBadge::None;
     }
     if (_state->caseBox.isBothPodsInCase) {
         result.caseBattery.badge = BatteryBadge::None;
+    }
+
+    // Pods on their own: one ring for the pair (the weaker one), no case.
+    if (result.scene == Scene::PodsOnly) {
+        if (result.leftBattery.visible && result.rightBattery.visible) {
+            if (result.leftBattery.value < result.rightBattery.value) {
+                result.rightBattery.value = result.leftBattery.value;
+            }
+            result.rightBattery.charging =
+                result.leftBattery.charging && result.rightBattery.charging;
+            result.leftBattery = {};
+        }
+        else if (result.leftBattery.visible) {
+            result.rightBattery = result.leftBattery;
+            result.leftBattery = {};
+        }
+        result.rightBattery.badge = BatteryBadge::None;
+        result.caseBattery = {};
     }
     return result;
 }

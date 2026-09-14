@@ -62,6 +62,9 @@ public:
     void SetFallbackImage(QImage image);
     void SetPlaybackEnabled(bool enabled);
 
+    // The last decoded frame (keyed, source resolution), for a hand-over to a still view.
+    QImage LastFrame() const;
+
 Q_SIGNALS:
     void Clicked();
     void FramePresented();

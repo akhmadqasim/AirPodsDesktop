@@ -433,6 +433,11 @@ void AnimationView::SetFallbackImage(QImage image)
     Clear();
 }
 
+QImage AnimationView::LastFrame() const
+{
+    return _frame;
+}
+
 void AnimationView::SetPlaybackEnabled(bool enabled)
 {
     {

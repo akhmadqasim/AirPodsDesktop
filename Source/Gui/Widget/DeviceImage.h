@@ -65,6 +65,10 @@ public:
     Arrangement GetArrangement() const;
     bool IsFading() const;
 
+    // Cross-fades from an arbitrary picture (e.g. the last video frame) into the current
+    // composition. A null image just shows the composition.
+    void CrossFadeFrom(QImage previous);
+
     // The composition currently shown (for tests); null while no source is set.
     QImage CurrentComposition() const;
 

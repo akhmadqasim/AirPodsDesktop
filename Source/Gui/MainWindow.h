@@ -36,6 +36,8 @@
 #include "../Core/Update.h"
 #include "Base.h"
 #include "Widget/Battery.h"
+#include "AnimationPlayback.h"
+#include "Widget/AnimationView.h"
 #include "Widget/DeviceImage.h"
 
 namespace Gui {
@@ -86,7 +88,12 @@ private:
     QPropertyAnimation _posAnimation{this, "pos"};
     // Battery rings fade in when they (re)appear, e.g. when merged pods split again.
     std::map<Widget::Battery *, QPropertyAnimation *> _batteryFades;
+    // Turntable video while both pods rest in the open case; a still render (cross-faded from
+    // the last frame) as soon as one is taken out.
+    Widget::AnimationView *_animationView;
+    AnimationPlayback *_playback;
     Widget::DeviceImage *_deviceImage;
+    bool _rotating{false};
     QTimer *_autoHideTimer = new QTimer{this};
     // Caps how long an opened lid may keep the popup up, in case the state stops updating.
     QTimer *_lidSafetyTimer = new QTimer{this};
@@ -113,6 +120,7 @@ private:
     void PlayAnimation();
     void StopAnimation();
     void FadeInBattery(Widget::Battery *widget);
+    void SetRotating(bool rotating);
     void BindDevice();
     void ShowDeviceSelector(std::vector<Core::Bluetooth::Device> devices);
     void ControlAutoHideTimer(bool start);

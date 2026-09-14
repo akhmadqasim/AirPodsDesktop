@@ -80,7 +80,7 @@ ImageSlices SliceByTransparentGaps(const QImage &image, int minGap)
 DeviceImage::DeviceImage(QWidget *parent) : QWidget{parent}
 {
     setAttribute(Qt::WA_TranslucentBackground);
-    _fade.setDuration(350);
+    _fade.setDuration(600);
     _fade.setEasingCurve(QEasingCurve::InOutCubic);
     _fade.setStartValue(0.0);
     _fade.setEndValue(1.0);
@@ -145,6 +145,19 @@ auto DeviceImage::GetArrangement() const -> Arrangement
 bool DeviceImage::IsFading() const
 {
     return _fade.state() == QAbstractAnimation::Running;
+}
+
+void DeviceImage::CrossFadeFrom(QImage previous)
+{
+    _fade.stop();
+    if (previous.isNull() || _current.isNull()) {
+        _previous = {};
+        update();
+        return;
+    }
+    _previous = std::move(previous);
+    _fade.start();
+    update();
 }
 
 QImage DeviceImage::CurrentComposition() const

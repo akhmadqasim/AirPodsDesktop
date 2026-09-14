@@ -83,6 +83,8 @@ private:
     Ui::MainWindow _ui;
 
     QPropertyAnimation _posAnimation{this, "pos"};
+    // Runs alongside the slide: the iOS sheet fades as it moves.
+    QPropertyAnimation _fadeAnimation{this, "windowOpacity"};
     Widget::AnimationView *_animationView;
     AnimationPlayback *_playback;
     QTimer *_autoHideTimer = new QTimer{this};

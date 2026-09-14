@@ -188,6 +188,7 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
         this, &MainWindow::VersionUpdateAvailableSafely, this, &MainWindow::VersionUpdateAvailable);
 
     _posAnimation.setDuration(500);
+    _fadeAnimation.setDuration(500);
     _autoHideTimer->setObjectName("autoHideTimer");
     _autoHideTimer->callOnTimeout([this] { DoHide(); });
     _lidSafetyTimer->setObjectName("lidSafetyTimer");
@@ -642,6 +643,12 @@ void MainWindow::DoHide()
     _posAnimation.setStartValue(pos());
     _posAnimation.setEndValue(QPoint{x(), screenGeometry.bottom() + 1});
     _posAnimation.start();
+
+    _fadeAnimation.stop();
+    _fadeAnimation.setEasingCurve(QEasingCurve::InQuad);
+    _fadeAnimation.setStartValue(windowOpacity());
+    _fadeAnimation.setEndValue(0.0);
+    _fadeAnimation.start();
 }
 
 void MainWindow::showEvent(QShowEvent *event)
@@ -698,17 +705,25 @@ void MainWindow::BeginShow(bool fromHidden)
         // positioning the slide origin outside it.
         move(target);
         move(target.x(), screenGeometry.bottom() + 1);
+        setWindowOpacity(0.0);
     }
     _posAnimation.setEasingCurve(QEasingCurve::OutExpo);
     _posAnimation.setStartValue(pos());
     _posAnimation.setEndValue(target);
     _posAnimation.start();
+
+    _fadeAnimation.stop();
+    _fadeAnimation.setEasingCurve(QEasingCurve::OutCubic);
+    _fadeAnimation.setStartValue(windowOpacity());
+    _fadeAnimation.setEndValue(1.0);
+    _fadeAnimation.start();
 }
 
 void MainWindow::hideEvent(QHideEvent *event)
 {
     _isVisible = false;
     _posAnimation.stop();
+    _fadeAnimation.stop();
     ControlAutoHideTimer(false);
     StopAnimation();
     QDialog::hideEvent(event);

@@ -188,7 +188,11 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
         this, &MainWindow::VersionUpdateAvailableSafely, this, &MainWindow::VersionUpdateAvailable);
 
     _posAnimation.setDuration(500);
+    _autoHideTimer->setObjectName("autoHideTimer");
     _autoHideTimer->callOnTimeout([this] { DoHide(); });
+    _lidSafetyTimer->setObjectName("lidSafetyTimer");
+    _lidSafetyTimer->setSingleShot(true);
+    _lidSafetyTimer->callOnTimeout([this] { DoHide(); });
 
     _ui.layoutAnimation->addWidget(_animationView);
     for (auto *battery : {_leftBattery, _rightBattery, _caseBattery}) {
@@ -227,6 +231,12 @@ void MainWindow::UpdateState(const Core::AirPods::State &state)
 
     _viewModel.UpdateState(state);
     Repaint();
+
+    const bool lidOpenBothInCase = state.caseBox.isLidOpened && state.caseBox.isBothPodsInCase;
+    if (lidOpenBothInCase != _lidOpenBothInCase) {
+        _lidOpenBothInCase = lidOpenBothInCase;
+        ControlAutoHideTimer(_isVisible);
+    }
 }
 
 void MainWindow::Available()
@@ -243,6 +253,8 @@ void MainWindow::Unavailable()
 
     _viewModel.Unavailable();
     Repaint();
+    _lidOpenBothInCase = false;
+    ControlAutoHideTimer(_isVisible);
 }
 
 void MainWindow::Disconnect()
@@ -251,6 +263,8 @@ void MainWindow::Disconnect()
 
     _viewModel.Disconnect();
     Repaint();
+    _lidOpenBothInCase = false;
+    ControlAutoHideTimer(_isVisible);
 }
 
 void MainWindow::Bind()
@@ -449,10 +463,20 @@ void MainWindow::ControlAutoHideTimer(bool start)
 {
     LOG(Trace, "ControlAutoHideTimer: start == '{}', _isVisible == '{}'", start, _isVisible);
 
-    if (start && _isVisible) {
+    if (start && _isVisible && _lidOpenBothInCase) {
+        // Like iOS: the sheet stays while the case sits open; the safety timer only guards
+        // against a state that never updates again.
+        _autoHideTimer->stop();
+        if (!_lidSafetyTimer->isActive()) {
+            _lidSafetyTimer->start(60s);
+        }
+    }
+    else if (start && _isVisible) {
+        _lidSafetyTimer->stop();
         _autoHideTimer->start(10s);
     }
     else {
+        _lidSafetyTimer->stop();
         _autoHideTimer->stop();
     }
 }

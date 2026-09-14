@@ -144,7 +144,17 @@ void Client::OnPacketReceived(Bytes packet)
                     }
                     _batteryStatus = status;
                 }
-                LOG(Info, "AAP: Battery status changed.");
+                auto describe = [](const std::optional<AapProtocol::BatteryReading> &reading) {
+                    return reading.has_value() ? std::to_string(reading->level) + "%" +
+                                                     (reading->status ==
+                                                              AapProtocol::ChargeStatus::Charging
+                                                          ? "+"
+                                                          : "")
+                                               : std::string{"-"};
+                };
+                LOG(Info, "AAP: Battery L {} R {} Case {} (primary {}).", describe(status.left),
+                    describe(status.right), describe(status.caseBox),
+                    status.primary == AapProtocol::BatteryComponent::Left ? "L" : "R");
                 emit BatteryStatusChanged(status);
             },
             [this](const AapProtocol::ListeningModeStatus &status) {

@@ -28,6 +28,7 @@
 #include "Source/Core/Aap.h"
 #include "Source/Core/QuickConnect.h"
 #include "Source/Gui/MainWindow.h"
+#include "Source/Gui/Widget/Battery.h"
 #include "Source/Gui/SettingsWindow.h"
 #include "Source/Gui/Theme.h"
 #include "Source/Gui/TrayIcon.h"
@@ -165,6 +166,38 @@ private Q_SLOTS:
         const auto scale = qEnvironmentVariable("QT_SCALE_FACTOR", "system");
         VerifySmoothPopupCorners(
             &window, QString{"main-window-long-device-name-scale%1.png"}.arg(scale));
+    }
+
+    void MainWindowRendersBatteryRings()
+    {
+        Gui::MainWindow window;
+        auto rings = window.findChildren<Gui::Widget::Battery *>();
+        QCOMPARE(rings.size(), 3);
+        for (auto *ring : rings) {
+            QCOMPARE(ring->getShape(), Gui::Widget::Battery::Shape::Ring);
+            QCOMPARE(ring->width(), ring->height());
+        }
+
+        Core::AirPods::State state;
+        state.model = Core::AirPods::Model::AirPods_Pro_2_USB_C;
+        state.displayName = QStringLiteral("AirPods Pro");
+        state.pods.left.battery = Core::AirPods::Battery{98};
+        state.pods.right.battery = Core::AirPods::Battery{15};
+        state.pods.right.isCharging = true;
+        state.caseBox.battery = Core::AirPods::Battery{100};
+        state.caseBox.isCharging = true;
+        state.caseBox.isBothPodsInCase = true;
+        state.caseBox.isLidOpened = true;
+        window.UpdateState(state);
+
+        // Rings only shrink the popup's battery row; the rest of the layout is untouched.
+        for (auto *ring : rings) {
+            QVERIFY(ring->isVisibleTo(&window));
+            QVERIFY(ring->height() <= 51);
+        }
+
+        const auto scale = qEnvironmentVariable("QT_SCALE_FACTOR", "system");
+        VerifySmoothPopupCorners(&window, QString{"main-window-battery-rings-scale%1.png"}.arg(scale));
     }
 
     void UpdateTextHasAntialiasedEdges_data()

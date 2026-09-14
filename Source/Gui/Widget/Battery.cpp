@@ -36,6 +36,19 @@ Battery::Battery(QWidget *parent) : QWidget{parent}
 
 void Battery::paintEvent(QPaintEvent *event)
 {
+    QPainter painter{this};
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+
+    if (_shape == Shape::Ring) {
+        paintRing(painter);
+    }
+    else {
+        paintBar(painter);
+    }
+}
+
+void Battery::paintBar(QPainter &painter)
+{
     QFontMetrics fontMetrics{this->fontMetrics()};
 
     qreal headWidth = getHeadWidth();
@@ -56,14 +69,134 @@ void Battery::paintEvent(QPaintEvent *event)
     _headRect = QRectF{
         _batteryRect.right(), _batteryRect.bottom() / 3.0, headWidth, _batteryRect.bottom() / 3.0};
 
-    QPainter painter{this};
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-
     drawBorder(painter);
     drawBackground(painter);
     drawHead(painter);
     drawChargingIcon(painter);
     drawText(painter);
+}
+
+void Battery::paintRing(QPainter &painter)
+{
+    // The ring fills `_batterySize` (square); the stroke scales with it so that the gauge keeps
+    // its proportions at every size the callers pick.
+    const qreal diameter = qMin(_batterySize.width(), _batterySize.height());
+    const qreal penWidth = qMax(diameter * 0.12, 2.0);
+    const QRectF ringRect{
+        penWidth / 2.0 + (width() - diameter) / 2.0, penWidth / 2.0, diameter - penWidth,
+        diameter - penWidth};
+
+    drawRingTrack(painter, ringRect, penWidth);
+    drawRingProgress(painter, ringRect, penWidth);
+    drawRingText(painter, ringRect);
+    drawRingChargingBadge(painter, ringRect, penWidth);
+}
+
+void Battery::drawRingTrack(QPainter &painter, const QRectF &rect, qreal penWidth)
+{
+    painter.save();
+    {
+        QColor track{_borderColor};
+        track.setAlphaF(0.35);
+        painter.setPen(QPen{track, penWidth, Qt::SolidLine, Qt::FlatCap});
+        painter.setBrush(Qt::NoBrush);
+        painter.drawEllipse(rect);
+    }
+    painter.restore();
+}
+
+void Battery::drawRingProgress(QPainter &painter, const QRectF &rect, qreal penWidth)
+{
+    if (_value <= _minValue || _maxValue <= _minValue) {
+        return;
+    }
+
+    painter.save();
+    {
+        const qreal fraction =
+            qBound(0.0, qreal(_value - _minValue) / qreal(_maxValue - _minValue), 1.0);
+        // Qt angles are in 1/16 degree, counter-clockwise; start at 12 o'clock and go clockwise.
+        constexpr int kStartAngle = 90 * 16;
+        const int spanAngle = -qRound(fraction * 360.0 * 16.0);
+
+        painter.setPen(QPen{getLevelColor(), penWidth, Qt::SolidLine, Qt::RoundCap});
+        painter.setBrush(Qt::NoBrush);
+        painter.drawArc(rect, kStartAngle, spanAngle);
+    }
+    painter.restore();
+}
+
+void Battery::drawRingText(QPainter &painter, const QRectF &rect)
+{
+    if (!_isShowText) {
+        return;
+    }
+
+    painter.save();
+    {
+        // Shrink the label until "100%" fits inside the ring's hole.
+        const QString text = QString{"%1%"}.arg(_value);
+        const qreal inner = rect.width() * 0.72;
+        QFont font = this->font();
+        for (qreal size = qMax(rect.width() * 0.32, 6.0); size >= 5.0; size -= 0.5) {
+            font.setPointSizeF(size);
+            if (QFontMetricsF{font}.horizontalAdvance("100%") <= inner) {
+                break;
+            }
+        }
+        painter.setFont(font);
+        painter.drawText(rect, Qt::AlignCenter, text);
+    }
+    painter.restore();
+}
+
+void Battery::drawRingChargingBadge(QPainter &painter, const QRectF &rect, qreal penWidth)
+{
+    if (!_isCharging) {
+        return;
+    }
+
+    painter.save();
+    {
+        // A small bolt sits on the ring at 6 o'clock, cut out from the track so it stays legible.
+        const qreal badge = qMax(penWidth * 2.2, 8.0);
+        const QRectF badgeRect{
+            rect.center().x() - badge / 2.0, rect.bottom() - badge / 2.0, badge, badge};
+
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(palette().color(QPalette::Window));
+        painter.drawEllipse(badgeRect);
+
+        const qreal inset = badge * 0.22;
+        drawChargingGlyph(painter, badgeRect.adjusted(inset, inset * 0.6, -inset, -inset * 0.6));
+    }
+    painter.restore();
+}
+
+void Battery::drawChargingGlyph(QPainter &painter, const QRectF &rect)
+{
+    // Same silhouette as `drawChargingIcon`, expressed in unit coordinates so it can be
+    // placed anywhere.
+    QPainterPath path;
+    path.moveTo(0.62, 0.0);
+    path.lineTo(0.0, 0.58);
+    path.lineTo(0.42, 0.58);
+    path.lineTo(0.30, 1.0);
+    path.lineTo(1.0, 0.40);
+    path.lineTo(0.56, 0.40);
+    path.closeSubpath();
+
+    QTransform transform;
+    transform.translate(rect.left(), rect.top());
+    transform.scale(rect.width(), rect.height());
+
+    painter.setPen(Qt::NoPen);
+    painter.fillPath(transform.map(path), QBrush{_chargingIconColor});
+}
+
+QColor Battery::getLevelColor() const
+{
+    return _value > _alarmValue ? _normalColor : _alarmColor;
 }
 
 void Battery::drawBorder(QPainter &painter)
@@ -166,6 +299,20 @@ void Battery::drawText(QPainter &painter)
         painter.drawText(_textRect, QString{"%1%"}.arg(_value), textOption);
     }
     painter.restore();
+}
+
+auto Battery::getShape() const -> Shape
+{
+    return _shape;
+}
+
+void Battery::setShape(Shape shape)
+{
+    if (_shape == shape) {
+        return;
+    }
+    _shape = shape;
+    updateFixedSize();
 }
 
 auto Battery::getMinValue() const -> ValueType
@@ -402,11 +549,21 @@ void Battery::setTextPadding(qreal value)
 void Battery::setBatterySize(int width, int height)
 {
     _batterySize = QSizeF{(qreal)width, (qreal)height};
+    updateFixedSize();
+}
 
-    QFontMetrics fontMetrics{this->fontMetrics()};
-    setFixedSize(
-        width + getChargingIconWidth() + getHeadWidth() + ChargingPadding,
-        height + (_isShowText ? (fontMetrics.height() + _textPadding) : 0));
+void Battery::updateFixedSize()
+{
+    if (_shape == Shape::Ring) {
+        const int diameter = qRound(qMin(_batterySize.width(), _batterySize.height()));
+        setFixedSize(diameter, diameter);
+    }
+    else {
+        QFontMetrics fontMetrics{this->fontMetrics()};
+        setFixedSize(
+            qRound(_batterySize.width() + getChargingIconWidth() + getHeadWidth() + ChargingPadding),
+            qRound(_batterySize.height() + (_isShowText ? (fontMetrics.height() + _textPadding) : 0)));
+    }
     update();
 }
 

@@ -50,6 +50,7 @@ class Battery : public QWidget
     Q_PROPERTY(QColor alarmColor READ getAlarmColor WRITE setAlarmColor)
     Q_PROPERTY(QColor normalColor READ getNormalColor WRITE setNormalColor)
 
+    Q_PROPERTY(Shape shape READ getShape WRITE setShape)
     Q_PROPERTY(bool isCharging READ isCharging WRITE setCharging)
     Q_PROPERTY(bool isShowText READ isShowText WRITE setShowText)
     Q_PROPERTY(qreal textPadding READ getTextPadding WRITE setTextPadding)
@@ -57,7 +58,17 @@ class Battery : public QWidget
 public:
     using ValueType = quint32;
 
+    // `Bar` is the classic battery outline with the percentage underneath; `Ring` is a circular
+    // gauge with the percentage inside, the way Apple's Batteries widget draws it.
+    enum class Shape {
+        Bar,
+        Ring,
+    };
+    Q_ENUM(Shape)
+
     explicit Battery(QWidget *parent = nullptr);
+
+    Shape getShape() const;
 
     ValueType getMinValue() const;
     ValueType getMaxValue() const;
@@ -82,6 +93,7 @@ public:
     // QSize minimumSizeHint() const override;
 
 public Q_SLOTS:
+    void setShape(Shape shape);
     void setRange(ValueType minValue, ValueType maxValue);
 
     void setMinValue(ValueType value);
@@ -127,6 +139,7 @@ private:
     QColor _alarmColor{235, 77, 61};
     QColor _chargingIconColor{Qt::black};
 
+    Shape _shape{Shape::Bar};
     bool _isCharging{false};
     bool _isShowText{true};
     qreal _textPadding{10};
@@ -138,11 +151,23 @@ private:
 
     QSizeF _batterySize{};
 
+    void paintBar(QPainter &painter);
+    void paintRing(QPainter &painter);
+
     void drawBorder(QPainter &painter);
     void drawBackground(QPainter &painter);
     void drawHead(QPainter &painter);
     void drawChargingIcon(QPainter &painter);
     void drawText(QPainter &painter);
+
+    void drawRingTrack(QPainter &painter, const QRectF &rect, qreal penWidth);
+    void drawRingProgress(QPainter &painter, const QRectF &rect, qreal penWidth);
+    void drawRingText(QPainter &painter, const QRectF &rect);
+    void drawRingChargingBadge(QPainter &painter, const QRectF &rect, qreal penWidth);
+    void drawChargingGlyph(QPainter &painter, const QRectF &rect);
+
+    QColor getLevelColor() const;
+    void updateFixedSize();
 
     qreal getHeadWidth() const;
     qreal getChargingIconWidth() const;

@@ -191,6 +191,10 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
     _autoHideTimer->callOnTimeout([this] { DoHide(); });
 
     _ui.layoutAnimation->addWidget(_animationView);
+    for (auto *battery : {_leftBattery, _rightBattery, _caseBattery}) {
+        battery->setShape(Widget::Battery::Shape::Ring);
+        battery->setBatterySize(44, 44);
+    }
     _ui.layoutPods->addWidget(_leftBattery);
     _ui.layoutPods->addWidget(_rightBattery);
     _ui.layoutCase->addWidget(_caseBattery);

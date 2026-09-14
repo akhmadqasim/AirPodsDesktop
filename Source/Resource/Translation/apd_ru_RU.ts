@@ -163,6 +163,26 @@ Enjoy it all.</source>
         <source>Quick connect</source>
         <translation>Быстрое подключение</translation>
     </message>
+    <message>
+        <source>Noise control</source>
+        <translation>Управление шумом</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Выкл.</translation>
+    </message>
+    <message>
+        <source>Noise Cancellation</source>
+        <translation>Шумоподавление</translation>
+    </message>
+    <message>
+        <source>Transparency</source>
+        <translation>Прозрачность</translation>
+    </message>
+    <message>
+        <source>Adaptive</source>
+        <translation>Адаптивный</translation>
+    </message>
 </context>
 <context>
     <name>Gui::UpdateWindow</name>

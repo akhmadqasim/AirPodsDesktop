@@ -35,6 +35,7 @@
 * 👂 自動入耳偵測與媒體播放控制。
 * 🚀 低延遲音訊模式。
 * 🌈 裝置彈出視窗動畫，以及淺色、深色或系統主題。
+* 🎛️ 安裝選用的 [AapWin](https://github.com/akhmadqasim/AapWin) 驅動程式後，支援噪音控制（關閉 / 主動式降噪 / 通透模式 / 適應性）與即時入耳偵測。
 
 ## 💻 系統需求
 
@@ -74,3 +75,4 @@ Windows 環境需求、建置命令與測試方式請參閱[建置說明](/Docs/
 * [OpenPods](https://github.com/adolfintel/OpenPods)
 * [Discontinued Privacy: Personal Data Leaks in Apple Bluetooth-Low-Energy Continuity Protocols](https://hal.inria.fr/hal-02394619/document)
 * [MagicPods](https://magicpods.app/)
+* [LibrePods](https://github.com/kavishdevar/librepods)（AAP 協定文件）

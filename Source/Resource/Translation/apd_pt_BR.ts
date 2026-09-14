@@ -163,6 +163,26 @@ Aproveite.</translation>
         <source>Low audio latency (may cause hiss)</source>
         <translation>Baixa latência de áudio (pode causar chiado)</translation>
     </message>
+    <message>
+        <source>Noise control</source>
+        <translation>Controle de ruído</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Desativado</translation>
+    </message>
+    <message>
+        <source>Noise Cancellation</source>
+        <translation>Cancelamento de ruído</translation>
+    </message>
+    <message>
+        <source>Transparency</source>
+        <translation>Transparência</translation>
+    </message>
+    <message>
+        <source>Adaptive</source>
+        <translation>Adaptativo</translation>
+    </message>
 </context>
 <context>
     <name>Gui::UpdateWindow</name>

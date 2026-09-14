@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <functional>
@@ -29,6 +30,7 @@
 
 #include <QObject>
 
+#include "AapProtocol.h"
 #include "Bluetooth.h"
 #include "AppleCP.h"
 #include "../Helper.h"
@@ -181,6 +183,17 @@ public:
 private:
     std::optional<bool> _lastBothInEar;
 };
+
+// What the AAP session knows so far; a `State` can be built once the battery report arrived,
+// because that report also tells which pod `EarStatus::primary` refers to.
+struct AapSnapshot {
+    std::optional<AapProtocol::BatteryStatus> battery;
+    std::optional<AapProtocol::EarStatus> ear;
+};
+
+// AAP has no lid sensor: the pods only report `InCase` while they stay connected, which is
+// what happens with the lid open, so "both in case" doubles as "lid opened".
+std::optional<State> BuildAapState(Model model, const AapSnapshot &snapshot);
 } // namespace Details
 
 class Manager : public QObject
@@ -198,10 +211,24 @@ public:
     void OnAutomaticEarDetectionChanged(bool enable);
     void OnBoundDeviceAddressChanged(uint64_t address);
 
+    // AAP (see `Core::Aap::Client`) reports battery and in-ear changes immediately, while BLE
+    // advertisements lag by seconds and need the scanner, which competes with A2DP for the radio.
+    // While the AAP link is up it owns the state and the BLE scanner is stopped; BLE takes over
+    // again when the link drops.
+    void OnAapLinkChanged(bool up);
+    void OnAapEarStatusChanged(const Core::AapProtocol::EarStatus &status);
+    void OnAapBatteryStatusChanged(const Core::AapProtocol::BatteryStatus &status);
+
 private:
     std::mutex _mutex;
     Details::StateManager _stateMgr;
     Details::EarDetectionTracker _earDetection;
+    std::atomic<bool> _aapLinkUp{false};
+    Details::AapSnapshot _aapSnapshot;
+    std::optional<State> _aapState;
+    // The UI shows an AAP-built state; `Disconnected` has to come from us then, `StateManager`
+    // has nothing to discard.
+    bool _aapStatePublished{false};
     std::optional<Bluetooth::Device> _boundDevice;
     QString _deviceName;
     Model _boundModel{Model::Unknown};
@@ -218,6 +245,7 @@ private:
     void CompleteBoundDeviceLookup(uint64_t address, std::optional<Bluetooth::Device> device);
     void OnBoundDeviceConnectionStateChanged(Bluetooth::DeviceState state);
     void OnStateChanged(Details::StateManager::UpdateEvent updateEvent);
+    void PublishAapState();
     void OnLidOpened(bool opened);
     void OnBothInEar(bool isBothInEar);
     bool OnAdvertisementReceived(const Bluetooth::AdvertisementWatcher::ReceivedData &data);

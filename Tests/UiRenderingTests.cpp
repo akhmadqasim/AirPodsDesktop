@@ -25,6 +25,7 @@
 #include <QTimer>
 #include <QPainter>
 
+#include "Source/Core/Aap.h"
 #include "Source/Core/QuickConnect.h"
 #include "Source/Gui/MainWindow.h"
 #include "Source/Gui/SettingsWindow.h"
@@ -767,7 +768,8 @@ private Q_SLOTS:
     {
         auto backend = std::make_shared<Core::QuickConnect::NullBackend>();
         Core::QuickConnect::Controller quickConnect{backend};
-        Gui::TrayIcon tray{[] { return 0; }, quickConnect};
+        Core::Aap::Client aap{std::make_shared<Core::Aap::NullBackend>()};
+        Gui::TrayIcon tray{[] { return 0; }, quickConnect, aap};
         auto *menu = tray.findChild<QMenu *>();
         QVERIFY(menu != nullptr);
         const auto actions = menu->actions();

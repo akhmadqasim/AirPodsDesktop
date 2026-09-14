@@ -50,9 +50,51 @@ void Details::EarDetectionTracker::Reset()
     _lastBothInEar.reset();
 }
 
+std::optional<State> Details::BuildAapState(Model model, const AapSnapshot &snapshot)
+{
+    using AapProtocol::BatteryComponent;
+    using AapProtocol::ChargeStatus;
+    using AapProtocol::EarState;
+
+    if (!snapshot.battery.has_value()) {
+        return std::nullopt;
+    }
+    const auto &battery = *snapshot.battery;
+
+    auto fill = [](BasicState &target, const std::optional<AapProtocol::BatteryReading> &reading) {
+        if (reading.has_value()) {
+            target.battery = Battery{reading->level};
+            target.isCharging = reading->status == ChargeStatus::Charging;
+        }
+    };
+
+    State state;
+    state.model = model;
+    fill(state.pods.left, battery.left);
+    fill(state.pods.right, battery.right);
+    fill(state.caseBox, battery.caseBox);
+
+    if (snapshot.ear.has_value()) {
+        const auto &ear = *snapshot.ear;
+        const bool primaryIsLeft = battery.primary == BatteryComponent::Left;
+        const auto leftEar = primaryIsLeft ? ear.primary : ear.secondary;
+        const auto rightEar = primaryIsLeft ? ear.secondary : ear.primary;
+        state.pods.left.isInEar = leftEar == EarState::InEar;
+        state.pods.right.isInEar = rightEar == EarState::InEar;
+        state.caseBox.isBothPodsInCase =
+            leftEar == EarState::InCase && rightEar == EarState::InCase;
+        state.caseBox.isLidOpened = state.caseBox.isBothPodsInCase;
+    }
+    return state;
+}
+
 Manager::Manager(QObject *parent) : QObject{parent}
 {
     _stateMgr.SetOnDiscardState([this] {
+        // Stopping the scanner for AAP lets the lost timer fire; that is not a disconnect.
+        if (_aapLinkUp) {
+            return;
+        }
         QMetaObject::invokeMethod(this, [this] { emit Disconnected(); }, Qt::QueuedConnection);
     });
 
@@ -83,6 +125,10 @@ void Manager::StartScanner()
         std::lock_guard<std::mutex> lock{_mutex};
         if (!_boundDevice.has_value() || !_deviceConnected) {
             LOG(Info, "Skip Bluetooth AdvWatcher start because the bound device is disconnected.");
+            return;
+        }
+        if (_aapLinkUp) {
+            LOG(Info, "Skip Bluetooth AdvWatcher start because AAP owns the state.");
             return;
         }
         if (_scannerWanted) {
@@ -129,6 +175,59 @@ void Manager::OnAutomaticEarDetectionChanged(bool enable)
 {
     std::lock_guard<std::mutex> lock{_mutex};
     _automaticEarDetection = enable;
+}
+
+void Manager::OnAapLinkChanged(bool up)
+{
+    std::lock_guard<std::mutex> lock{_mutex};
+    if (_aapLinkUp == up) {
+        return;
+    }
+    _aapLinkUp = up;
+    _aapSnapshot = {};
+    _aapState.reset();
+
+    if (up) {
+        LOG(Info, "AAP link up: handing the state over from BLE.");
+        _stateMgr.Disconnect();
+        QMetaObject::invokeMethod(this, [this] { StopScanner(); }, Qt::QueuedConnection);
+    }
+    else {
+        LOG(Info, "AAP link down: handing the state back to BLE.");
+        QMetaObject::invokeMethod(this, [this] { StartScanner(); }, Qt::QueuedConnection);
+    }
+}
+
+void Manager::OnAapEarStatusChanged(const Core::AapProtocol::EarStatus &status)
+{
+    std::lock_guard<std::mutex> lock{_mutex};
+    if (!_aapLinkUp) {
+        return;
+    }
+    _aapSnapshot.ear = status;
+    PublishAapState();
+}
+
+void Manager::OnAapBatteryStatusChanged(const Core::AapProtocol::BatteryStatus &status)
+{
+    std::lock_guard<std::mutex> lock{_mutex};
+    if (!_aapLinkUp) {
+        return;
+    }
+    _aapSnapshot.battery = status;
+    PublishAapState();
+}
+
+void Manager::PublishAapState()
+{
+    auto newState = Details::BuildAapState(_boundModel, _aapSnapshot);
+    if (!newState.has_value() || newState == _aapState) {
+        return;
+    }
+    Details::StateManager::UpdateEvent event{_aapState, *newState};
+    _aapState = std::move(newState);
+    _aapStatePublished = true;
+    OnStateChanged(std::move(event));
 }
 
 void Manager::OnBoundDeviceAddressChanged(uint64_t address)
@@ -226,6 +325,10 @@ void Manager::OnBoundDeviceConnectionStateChanged(Bluetooth::DeviceState state)
     if (doDisconnect) {
         _stateMgr.Disconnect();
         _earDetection.Reset();
+        if (_aapStatePublished) {
+            _aapStatePublished = false;
+            QMetaObject::invokeMethod(this, [this] { emit Disconnected(); }, Qt::QueuedConnection);
+        }
     }
 
     LOG(Info, "The device we bound is updated. current: {}, new: {}", oldDeviceConnected,
@@ -296,6 +399,11 @@ bool Manager::OnAdvertisementReceived(const Bluetooth::AdvertisementWatcher::Rec
         return false;
     }
 
+    if (_aapLinkUp) {
+        LOG(Trace, "Ignore advertisement while AAP owns the state.");
+        return false;
+    }
+
     if (_boundModel != Model::Unknown && adv.GetAdvState().model != _boundModel) {
         LOG(Trace, "Ignore advertisement for a model other than the bound device.");
         return false;
@@ -306,6 +414,7 @@ bool Manager::OnAdvertisementReceived(const Bluetooth::AdvertisementWatcher::Rec
 
     auto optUpdateEvent = _stateMgr.OnAdvReceived(std::move(adv));
     if (optUpdateEvent.has_value()) {
+        _aapStatePublished = false;
         OnStateChanged(std::move(optUpdateEvent.value()));
     }
     return true;

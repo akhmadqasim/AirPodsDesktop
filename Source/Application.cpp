@@ -37,8 +37,10 @@
 #include "Core/GlobalMedia.h"
 #include "Core/LowAudioLatency.h"
 #include "Core/QuickConnect.h"
+#include "Core/Aap.h"
 #if defined APD_OS_WIN
     #include "Core/QuickConnect_win.h"
+    #include "Core/Aap_win.h"
 #endif
 #include "Core/Settings.h"
 #include "Core/Update.h"
@@ -204,8 +206,15 @@ bool ApdApplication::Prepare(int argc, char *argv[])
 #endif
     _quickConnect = std::make_unique<Core::QuickConnect::Controller>(_quickConnectBackend);
 
+#if defined APD_OS_WIN
+    _aapBackend = std::make_shared<Core::Aap::WindowsBackend>();
+#else
+    _aapBackend = std::make_shared<Core::Aap::NullBackend>();
+#endif
+    _aap = std::make_unique<Core::Aap::Client>(_aapBackend);
+
     _trayIcon = std::make_unique<Gui::TrayIcon>(
-        [this] { return GetCurrentLoadedLocaleIndex(); }, *_quickConnect);
+        [this] { return GetCurrentLoadedLocaleIndex(); }, *_quickConnect, *_aap);
     _taskbarStatus = std::make_unique<Gui::TaskbarStatus>();
     _mainWindow = std::make_unique<Gui::MainWindow>();
     _mainWindow->StartUpdateChecks();
@@ -274,6 +283,19 @@ void ApdApplication::ConnectAirPodsManager()
     connect(
         manager, &Core::AirPods::Manager::DeviceConnectionChanged, _lowAudioLatencyController.get(),
         &Core::LowAudioLatency::Controller::SetDeviceConnectedSafely);
+    connect(
+        manager, &Core::AirPods::Manager::DeviceConnectionChanged, _aap.get(),
+        &Core::Aap::Client::SetDeviceConnected, Qt::QueuedConnection);
+    connect(
+        _aap.get(), &Core::Aap::Client::LinkChanged, manager,
+        &Core::AirPods::Manager::OnAapLinkChanged);
+    // Direct: the slot runs on the AAP reader thread so that media control does not block the GUI.
+    connect(
+        _aap.get(), &Core::Aap::Client::EarStatusChanged, manager,
+        &Core::AirPods::Manager::OnAapEarStatusChanged, Qt::DirectConnection);
+    connect(
+        _aap.get(), &Core::Aap::Client::BatteryStatusChanged, manager,
+        &Core::AirPods::Manager::OnAapBatteryStatusChanged, Qt::DirectConnection);
     connect(manager, &Core::AirPods::Manager::LidToggled, mainWindow, [mainWindow](bool opened) {
         if (opened) {
             emit mainWindow->ShowSafely();

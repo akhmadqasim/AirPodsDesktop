@@ -28,8 +28,10 @@
 namespace Gui {
 
 TrayIcon::TrayIcon(
-    std::function<int()> getCurrentLocaleIndex, Core::QuickConnect::Controller &quickConnect)
-    : _quickConnect{quickConnect}, _settingsWindow{std::move(getCurrentLocaleIndex), quickConnect}
+    std::function<int()> getCurrentLocaleIndex, Core::QuickConnect::Controller &quickConnect,
+    Core::Aap::Client &aap)
+    : _quickConnect{quickConnect}, _aap{aap},
+      _settingsWindow{std::move(getCurrentLocaleIndex), quickConnect}
 {
     Theme::ConfigurePopupSurface(_menu);
     _singleClickTimer.setSingleShot(true);
@@ -58,8 +60,30 @@ TrayIcon::TrayIcon(
     _actionNewVersion->setVisible(false);
     _actionLowAudioLatency->setCheckable(true);
 
+    using Core::AapProtocol::ListeningMode;
+    const std::pair<QAction *, ListeningMode> noiseActions[] = {
+        {_actionNoiseOff, ListeningMode::Off},
+        {_actionNoiseAnc, ListeningMode::Anc},
+        {_actionNoiseTransparency, ListeningMode::Transparency},
+        {_actionNoiseAdaptive, ListeningMode::Adaptive},
+    };
+    for (const auto &[action, mode] : noiseActions) {
+        action->setCheckable(true);
+        action->setData(static_cast<int>(mode));
+        _noiseControlGroup->addAction(action);
+        _noiseControlMenu->addAction(action);
+    }
+    connect(_noiseControlGroup, &QActionGroup::triggered, this, [this](QAction *action) {
+        _aap.SetListeningMode(static_cast<ListeningMode>(action->data().toInt()));
+    });
+    connect(&_aap, &Core::Aap::Client::LinkChanged, this, &TrayIcon::OnAapLinkChanged);
+    connect(
+        &_aap, &Core::Aap::Client::ListeningModeChanged, this, &TrayIcon::OnListeningModeChanged);
+    _noiseControlMenu->setEnabled(false);
+
     _menu->addAction(_actionNewVersion);
     _menu->addSeparator();
+    _menu->addMenu(_noiseControlMenu);
     _menu->addAction(_actionLowAudioLatency);
     _menu->addAction(_actionSettings);
     _menu->addSeparator();
@@ -457,6 +481,26 @@ void TrayIcon::OnLowAudioLatencyChanged(bool enabled)
 {
     _actionLowAudioLatency->setChecked(enabled);
     _settingsWindow.SetLowAudioLatencyChecked(enabled);
+}
+
+void TrayIcon::OnAapLinkChanged(bool up)
+{
+    _noiseControlMenu->setEnabled(up);
+    if (!up) {
+        if (auto *checked = _noiseControlGroup->checkedAction()) {
+            checked->setChecked(false);
+        }
+    }
+}
+
+void TrayIcon::OnListeningModeChanged(Core::AapProtocol::ListeningMode mode)
+{
+    for (auto *action : _noiseControlGroup->actions()) {
+        if (action->data().toInt() == static_cast<int>(mode)) {
+            action->setChecked(true);
+            return;
+        }
+    }
 }
 
 } // namespace Gui

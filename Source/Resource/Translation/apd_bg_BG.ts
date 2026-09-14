@@ -163,6 +163,26 @@ Enjoy it all.</source>
         <source>Low audio latency (may cause hiss)</source>
         <translation>Ниска латентност на звука (може да причини шум)</translation>
     </message>
+    <message>
+        <source>Noise control</source>
+        <translation>Контрол на шума</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Изкл.</translation>
+    </message>
+    <message>
+        <source>Noise Cancellation</source>
+        <translation>Шумопотискане</translation>
+    </message>
+    <message>
+        <source>Transparency</source>
+        <translation>Прозрачност</translation>
+    </message>
+    <message>
+        <source>Adaptive</source>
+        <translation>Адаптивен</translation>
+    </message>
 </context>
 <context>
     <name>Gui::UpdateWindow</name>

@@ -163,6 +163,26 @@ Keyfini çıkarın.</translation>
         <source>Low audio latency (may cause hiss)</source>
         <translation>Düşük ses gecikmesi (dip sese neden olabilir)</translation>
     </message>
+    <message>
+        <source>Noise control</source>
+        <translation>Gürültü denetimi</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Kapalı</translation>
+    </message>
+    <message>
+        <source>Noise Cancellation</source>
+        <translation>Gürültü Engelleme</translation>
+    </message>
+    <message>
+        <source>Transparency</source>
+        <translation>Saydamlık</translation>
+    </message>
+    <message>
+        <source>Adaptive</source>
+        <translation>Uyarlanabilir</translation>
+    </message>
 </context>
 <context>
     <name>Gui::UpdateWindow</name>

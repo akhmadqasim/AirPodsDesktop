@@ -163,6 +163,26 @@ Enjoy it all.</source>
         <source>Low audio latency (may cause hiss)</source>
         <translation>Низька затримка звуку (може спричинити шипіння)</translation>
     </message>
+    <message>
+        <source>Noise control</source>
+        <translation>Керування шумом</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Вимк.</translation>
+    </message>
+    <message>
+        <source>Noise Cancellation</source>
+        <translation>Шумозаглушення</translation>
+    </message>
+    <message>
+        <source>Transparency</source>
+        <translation>Прозорість</translation>
+    </message>
+    <message>
+        <source>Adaptive</source>
+        <translation>Адаптивний</translation>
+    </message>
 </context>
 <context>
     <name>Gui::UpdateWindow</name>

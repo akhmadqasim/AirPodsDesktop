@@ -163,6 +163,26 @@ Profitez bien de tout ça.</translation>
         <source>Quick connect</source>
         <translation>Connexion rapide</translation>
     </message>
+    <message>
+        <source>Noise control</source>
+        <translation>Contrôle du bruit</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Désactivé</translation>
+    </message>
+    <message>
+        <source>Noise Cancellation</source>
+        <translation>Réduction du bruit</translation>
+    </message>
+    <message>
+        <source>Transparency</source>
+        <translation>Transparence</translation>
+    </message>
+    <message>
+        <source>Adaptive</source>
+        <translation>Adaptatif</translation>
+    </message>
 </context>
 <context>
     <name>Gui::UpdateWindow</name>

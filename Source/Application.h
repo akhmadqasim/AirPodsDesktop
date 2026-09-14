@@ -44,6 +44,11 @@ class Backend;
 class Controller;
 } // namespace Core::QuickConnect
 
+namespace Core::Aap {
+class Backend;
+class Client;
+} // namespace Core::Aap
+
 namespace Gui {
 class MainWindow;
 class TaskbarStatus;
@@ -86,6 +91,8 @@ private:
     // in reverse declaration order.
     std::shared_ptr<Core::QuickConnect::Backend> _quickConnectBackend;
     std::unique_ptr<Core::QuickConnect::Controller> _quickConnect;
+    std::shared_ptr<Core::Aap::Backend> _aapBackend;
+    std::unique_ptr<Core::Aap::Client> _aap;
     std::unique_ptr<Gui::TrayIcon> _trayIcon;
     std::unique_ptr<Gui::TaskbarStatus> _taskbarStatus;
     std::unique_ptr<Gui::MainWindow> _mainWindow;

@@ -323,6 +323,7 @@ set(
 
     "Source/Core/AirPodsAdvertisement.cpp"
     "Source/Core/AirPodsStateManager.cpp"
+    "Source/Core/AapProtocol.cpp"
     "Source/Core/AppleCP.cpp"
 )
 
@@ -332,6 +333,7 @@ set(
     "Source/Core/Debug.cpp"
     "Source/Core/Update.cpp"
     "Source/Core/AirPods.cpp"
+    "Source/Core/Aap.cpp"
     "Source/Core/QuickConnect.cpp"
     "Source/Core/Settings.cpp"
     "Source/Core/SettingsRepository.cpp"
@@ -369,6 +371,7 @@ set(ADD_EXECUTABLE_ARG)
 
 if (WIN32)
     list(APPEND APD_CORE_CODE_FILES
+        "Source/Core/Aap_win.cpp"
         "Source/Core/AutoStart_win.cpp"
         "Source/Core/Bluetooth_win.cpp"
         "Source/Core/GlobalMedia_win.cpp"
@@ -511,7 +514,7 @@ target_link_libraries(
 )
 
 if (WIN32)
-    target_link_libraries(apd_core PRIVATE Ole32 Uuid Ksuser)
+    target_link_libraries(apd_core PRIVATE Ole32 Uuid Ksuser Cfgmgr32)
 endif()
 
 target_link_libraries(

@@ -164,6 +164,26 @@ Divertiti.</translation>
         <source>Low audio latency (may cause hiss)</source>
         <translation>Bassa latenza audio (potrebbe causare fruscii)</translation>
     </message>
+    <message>
+        <source>Noise control</source>
+        <translation>Controllo rumore</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>No</translation>
+    </message>
+    <message>
+        <source>Noise Cancellation</source>
+        <translation>Cancellazione del rumore</translation>
+    </message>
+    <message>
+        <source>Transparency</source>
+        <translation>Trasparenza</translation>
+    </message>
+    <message>
+        <source>Adaptive</source>
+        <translation>Adattivo</translation>
+    </message>
 </context>
 <context>
     <name>Gui::UpdateWindow</name>

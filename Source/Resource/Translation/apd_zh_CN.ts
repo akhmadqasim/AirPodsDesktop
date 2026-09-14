@@ -163,6 +163,26 @@ Enjoy it all.</source>
         <source>Quick connect</source>
         <translation>快速连接</translation>
     </message>
+    <message>
+        <source>Noise control</source>
+        <translation>降噪控制</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>关闭</translation>
+    </message>
+    <message>
+        <source>Noise Cancellation</source>
+        <translation>主动降噪</translation>
+    </message>
+    <message>
+        <source>Transparency</source>
+        <translation>通透模式</translation>
+    </message>
+    <message>
+        <source>Adaptive</source>
+        <translation>自适应</translation>
+    </message>
 </context>
 <context>
     <name>Gui::UpdateWindow</name>

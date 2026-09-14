@@ -163,6 +163,26 @@ Enjoy it all.</source>
         <source>Quick connect</source>
         <translation>クイック接続</translation>
     </message>
+    <message>
+        <source>Noise control</source>
+        <translation>ノイズコントロール</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>オフ</translation>
+    </message>
+    <message>
+        <source>Noise Cancellation</source>
+        <translation>ノイズキャンセリング</translation>
+    </message>
+    <message>
+        <source>Transparency</source>
+        <translation>外部音取り込み</translation>
+    </message>
+    <message>
+        <source>Adaptive</source>
+        <translation>適応型</translation>
+    </message>
 </context>
 <context>
     <name>Gui::UpdateWindow</name>

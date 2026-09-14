@@ -8,6 +8,7 @@
 #include <QTemporaryFile>
 
 #include <Config.h>
+#include "Source/Core/AapProtocol.h"
 #include "Source/Core/AirPods.h"
 #include "Source/Core/Settings.h"
 #include "Source/Core/SettingsRepository.h"
@@ -222,6 +223,8 @@ private Q_SLOTS:
     void EarDetectionTrackerSurvivesStateLoss();
     void TraceReplayPausesOnceAndResumesOnce();
     void TraceReplayFollowsAlternatingBroadcaster();
+    void BuildsStateFromAapReports();
+    void AapStateWaitsForBatteryReport();
     void PackagesCompatibleLowLatencySilence();
     void LoadsSettingsThroughRepository();
     void MigratesLegacySettingsRepository();
@@ -657,6 +660,68 @@ void AirPodsDomainTests::TraceReplayFollowsAlternatingBroadcaster()
         {kTraceLeftPod, -80, 0x2b},
     };
     QCOMPARE(ReplayTrace(manager, tracker, untilBothIn), (std::vector<bool>{true}));
+}
+
+void AirPodsDomainTests::BuildsStateFromAapReports()
+{
+    using namespace Core::AapProtocol;
+    using Core::AirPods::Details::AapSnapshot;
+    using Core::AirPods::Details::BuildAapState;
+
+    // Right pod listed first = primary; case reported as disconnected (pods are out).
+    AapSnapshot snapshot;
+    snapshot.battery = BatteryStatus{
+        .left = BatteryReading{87, ChargeStatus::Discharging},
+        .right = BatteryReading{92, ChargeStatus::Charging},
+        .caseBox = std::nullopt,
+        .primary = BatteryComponent::Right,
+    };
+    snapshot.ear = EarStatus{EarState::InEar, EarState::Out};
+
+    auto state = BuildAapState(Core::AirPods::Model::AirPods_Pro_2_USB_C, snapshot);
+    QVERIFY(state.has_value());
+    QCOMPARE(state->model, Core::AirPods::Model::AirPods_Pro_2_USB_C);
+    QCOMPARE(state->pods.left.battery.Value(), 87u);
+    QCOMPARE(state->pods.right.battery.Value(), 92u);
+    QVERIFY(!state->pods.left.isCharging);
+    QVERIFY(state->pods.right.isCharging);
+    QVERIFY(!state->caseBox.battery.Available());
+    QVERIFY(state->pods.right.isInEar);
+    QVERIFY(!state->pods.left.isInEar);
+    QVERIFY(!state->caseBox.isBothPodsInCase);
+    QVERIFY(!state->caseBox.isLidOpened);
+
+    // Primary swaps to the left pod: the same ear report now describes the other side.
+    snapshot.battery->primary = BatteryComponent::Left;
+    state = BuildAapState(Core::AirPods::Model::AirPods_Pro_2_USB_C, snapshot);
+    QVERIFY(state->pods.left.isInEar);
+    QVERIFY(!state->pods.right.isInEar);
+
+    // Both pods in the case while still connected: shown as an opened lid.
+    snapshot.ear = EarStatus{EarState::InCase, EarState::InCase};
+    snapshot.battery->caseBox = BatteryReading{60, ChargeStatus::Charging};
+    state = BuildAapState(Core::AirPods::Model::AirPods_Pro_2_USB_C, snapshot);
+    QVERIFY(state->caseBox.isBothPodsInCase);
+    QVERIFY(state->caseBox.isLidOpened);
+    QCOMPARE(state->caseBox.battery.Value(), 60u);
+    QVERIFY(state->caseBox.isCharging);
+}
+
+void AirPodsDomainTests::AapStateWaitsForBatteryReport()
+{
+    using namespace Core::AapProtocol;
+    using Core::AirPods::Details::AapSnapshot;
+    using Core::AirPods::Details::BuildAapState;
+
+    AapSnapshot snapshot;
+    snapshot.ear = EarStatus{EarState::InEar, EarState::InEar};
+    QVERIFY(!BuildAapState(Core::AirPods::Model::AirPods_Pro_2, snapshot).has_value());
+
+    snapshot.battery = BatteryStatus{.left = BatteryReading{50, ChargeStatus::Discharging}};
+    auto state = BuildAapState(Core::AirPods::Model::AirPods_Pro_2, snapshot);
+    QVERIFY(state.has_value());
+    QVERIFY(state->pods.left.isInEar && state->pods.right.isInEar);
+    QVERIFY(!state->pods.right.battery.Available());
 }
 
 void AirPodsDomainTests::LoadsSettingsThroughRepository()

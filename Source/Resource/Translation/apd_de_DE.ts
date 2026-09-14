@@ -163,6 +163,26 @@ Genieße es.</translation>
         <source>Quick connect</source>
         <translation>Schnellverbindung</translation>
     </message>
+    <message>
+        <source>Noise control</source>
+        <translation>Geräuschkontrolle</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Aus</translation>
+    </message>
+    <message>
+        <source>Noise Cancellation</source>
+        <translation>Geräuschunterdrückung</translation>
+    </message>
+    <message>
+        <source>Transparency</source>
+        <translation>Transparenz</translation>
+    </message>
+    <message>
+        <source>Adaptive</source>
+        <translation>Adaptiv</translation>
+    </message>
 </context>
 <context>
     <name>Gui::UpdateWindow</name>

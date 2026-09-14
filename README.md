@@ -35,6 +35,7 @@
 * 👂 Automatic ear detection and media playback control.
 * 🚀 Low audio latency mode.
 * 🌈 Animated device popups and light, dark, or system themes.
+* 🎛️ Noise control (Off / Noise Cancellation / Transparency / Adaptive) and instant ear detection with the optional [AapWin](https://github.com/akhmadqasim/AapWin) driver.
 
 ## 💻 System requirements
 
@@ -75,3 +76,4 @@ Keep `README.md`, `README-CN.md`, and `README-TW.md` aligned in section order, f
 * [OpenPods](https://github.com/adolfintel/OpenPods)
 * [Discontinued Privacy: Personal Data Leaks in Apple Bluetooth-Low-Energy Continuity Protocols](https://hal.inria.fr/hal-02394619/document)
 * [MagicPods](https://magicpods.app/)
+* [LibrePods](https://github.com/kavishdevar/librepods) (AAP protocol documentation)

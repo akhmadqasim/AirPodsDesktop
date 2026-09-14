@@ -163,6 +163,26 @@ Enjoy it all.</source>
         <source>Low audio latency (may cause hiss)</source>
         <translation>오디오 지연 최소화(잡음이 발생할 수 있음)</translation>
     </message>
+    <message>
+        <source>Noise control</source>
+        <translation>노이즈 제어</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>끔</translation>
+    </message>
+    <message>
+        <source>Noise Cancellation</source>
+        <translation>노이즈 캔슬링</translation>
+    </message>
+    <message>
+        <source>Transparency</source>
+        <translation>주변음 허용</translation>
+    </message>
+    <message>
+        <source>Adaptive</source>
+        <translation>적응형</translation>
+    </message>
 </context>
 <context>
     <name>Gui::UpdateWindow</name>

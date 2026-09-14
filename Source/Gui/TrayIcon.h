@@ -24,7 +24,9 @@
 #include <QTimer>
 #include <QMenu>
 #include <QAction>
+#include <QActionGroup>
 
+#include "../Core/Aap.h"
 #include "../Core/AirPods.h"
 #include "../Core/QuickConnect.h"
 #include "../Core/Update.h"
@@ -40,7 +42,8 @@ class TrayIcon : public QWidget
 
 public:
     explicit TrayIcon(
-        std::function<int()> getCurrentLocaleIndex, Core::QuickConnect::Controller &quickConnect);
+        std::function<int()> getCurrentLocaleIndex, Core::QuickConnect::Controller &quickConnect,
+        Core::Aap::Client &aap);
 
     template <class... ArgsT>
     inline void ShowMessage(ArgsT &&...args)
@@ -74,6 +77,13 @@ private:
     QMenu *_menu = new QMenu{this};
     QAction *_actionNewVersion = new QAction{tr("New version available!"), this};
     QAction *_actionLowAudioLatency = new QAction{tr("Low audio latency (may cause hiss)"), this};
+    // Listening modes over AAP; only usable while `Core::Aap::Client` has a link.
+    QMenu *_noiseControlMenu = new QMenu{tr("Noise control"), this};
+    QActionGroup *_noiseControlGroup = new QActionGroup{this};
+    QAction *_actionNoiseOff = new QAction{tr("Off"), this};
+    QAction *_actionNoiseAnc = new QAction{tr("Noise Cancellation"), this};
+    QAction *_actionNoiseTransparency = new QAction{tr("Transparency"), this};
+    QAction *_actionNoiseAdaptive = new QAction{tr("Adaptive"), this};
     QAction *_actionSettings = new QAction{tr("Settings"), this};
     QAction *_actionAbout = new QAction{tr("About"), this};
     QAction *_actionQuit = new QAction{tr("Quit"), this};
@@ -85,6 +95,7 @@ private:
     std::optional<Core::Update::ReleaseInfo> _updateReleaseInfo;
     std::optional<IconRenderState> _lastIconRenderState;
     Core::QuickConnect::Controller &_quickConnect;
+    Core::Aap::Client &_aap;
     TrayActivationState _trayActivationState;
     QTimer _singleClickTimer{this};
 
@@ -102,6 +113,8 @@ private:
     void OnQuickConnectOutcome(Core::QuickConnect::Outcome outcome, const QString &deviceName);
     void OnTrayIconBatteryChanged(Core::Settings::TrayIconBatteryBehavior value);
     void OnLowAudioLatencyChanged(bool enabled);
+    void OnAapLinkChanged(bool up);
+    void OnListeningModeChanged(Core::AapProtocol::ListeningMode mode);
 
 protected:
     SettingsWindow _settingsWindow;

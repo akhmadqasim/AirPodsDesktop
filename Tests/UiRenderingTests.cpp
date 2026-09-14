@@ -235,7 +235,14 @@ private Q_SLOTS:
             QVERIFY(ring->isVisibleTo(&window));
             QVERIFY(ring->height() <= 51);
         }
-        QCOMPARE(rings[0]->getBadge() == Gui::Widget::Battery::Badge::None, false);
+        // Both pods in the case: L/R badges stay (levels differ), the case glyph is dropped.
+        std::map<Gui::Widget::Battery::Badge, int> badges;
+        for (auto *ring : rings) {
+            ++badges[ring->getBadge()];
+        }
+        QCOMPARE(badges[Gui::Widget::Battery::Badge::Left], 1);
+        QCOMPARE(badges[Gui::Widget::Battery::Badge::Right], 1);
+        QCOMPARE(badges[Gui::Widget::Battery::Badge::None], 1);
 
         const auto scale = qEnvironmentVariable("QT_SCALE_FACTOR", "system");
         VerifySmoothPopupCorners(&window, QString{"main-window-battery-rings-scale%1.png"}.arg(scale));

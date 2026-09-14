@@ -21,6 +21,7 @@
 #include <QScreen>
 #include <QCursor>
 #include <QFontMetrics>
+#include <QGraphicsOpacityEffect>
 #include <QPainter>
 #include <QMessageBox>
 #include <QCloseEvent>
@@ -143,8 +144,7 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
     qRegisterMetaType<Core::AirPods::State>("Core::AirPods::State");
     qRegisterMetaType<Core::Update::ReleaseInfo>("Core::Update::ReleaseInfo");
 
-    _animationView = new Widget::AnimationView{this};
-    _playback = new AnimationPlayback{*_animationView, this};
+    _deviceImage = new Widget::DeviceImage{this};
     _closeButton = new CloseButton{this};
 
     _ui.setupUi(this);
@@ -173,7 +173,7 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
     connect(qApp, &QGuiApplication::applicationStateChanged, this, &MainWindow::OnAppStateChanged);
     connect(_ui.pushButton, &QPushButton::clicked, this, &MainWindow::OnButtonClicked);
     connect(&_posAnimation, &QPropertyAnimation::finished, this, &MainWindow::OnPosMoveFinished);
-    connect(_animationView, &Widget::AnimationView::Clicked, this, &MainWindow::OnAnimationClicked);
+    connect(_deviceImage, &Widget::DeviceImage::Clicked, this, &MainWindow::OnAnimationClicked);
     connect(_closeButton, &CloseButton::Clicked, this, &MainWindow::DoHide);
 
     connect(this, &MainWindow::UpdateStateSafely, this, &MainWindow::UpdateState);
@@ -195,7 +195,7 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
     _lidSafetyTimer->setSingleShot(true);
     _lidSafetyTimer->callOnTimeout([this] { DoHide(); });
 
-    _ui.layoutAnimation->addWidget(_animationView);
+    _ui.layoutAnimation->addWidget(_deviceImage);
     for (auto *battery : {_leftBattery, _rightBattery, _caseBattery}) {
         battery->setShape(Widget::Battery::Shape::Ring);
         battery->setTextPadding(4);
@@ -206,9 +206,21 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
     _ui.layoutCase->addWidget(_caseBattery);
     _ui.layoutClose->addWidget(_closeButton);
 
-    // For getting the correct initial height of `_animationView` later
+    // For getting the correct initial height of `_deviceImage` later
     _ui.layoutAnimation->activate();
-    _animationView->show();
+    _deviceImage->show();
+
+    for (auto *battery : {_leftBattery, _rightBattery, _caseBattery}) {
+        auto *effect = new QGraphicsOpacityEffect{battery};
+        effect->setOpacity(1.0);
+        battery->setGraphicsEffect(effect);
+        auto *fade = new QPropertyAnimation{effect, "opacity", this};
+        fade->setDuration(350);
+        fade->setEasingCurve(QEasingCurve::OutCubic);
+        fade->setStartValue(0.0);
+        fade->setEndValue(1.0);
+        _batteryFades[battery] = fade;
+    }
 }
 
 void MainWindow::StartUpdateChecks()
@@ -218,8 +230,6 @@ void MainWindow::StartUpdateChecks()
 
 MainWindow::~MainWindow()
 {
-    // Stop the decoder before QObject destroys the video surface child.
-    delete _playback;
     _deviceQueryThread.request_stop();
     if (_deviceQueryThread.joinable()) {
         _deviceQueryThread.join();
@@ -355,16 +365,17 @@ void MainWindow::SetAnimation(std::optional<Core::AirPods::Model> model)
 
     if (!model.has_value()) {
         StopAnimation();
-        _playback->SetAnimation({});
+        _deviceImage->SetSource({});
     }
     else {
+        // The still poster of the turntable video: iOS shows a static render too.
         const auto presentation = GetAnimationPresentation(model.value());
 
         auto aspectRatio =
             (float)presentation.sourceSize.width() / (float)presentation.sourceSize.height();
-        auto widgetWidth = _animationView->height() * aspectRatio;
-        _animationView->setFixedWidth(widgetWidth);
-        _playback->SetAnimation(presentation);
+        auto widgetWidth = _deviceImage->height() * aspectRatio;
+        _deviceImage->setFixedWidth(widgetWidth);
+        _deviceImage->SetSource(QImage{presentation.FallbackResource()});
 
         if (_isVisible) {
             PlayAnimation();
@@ -379,14 +390,20 @@ void MainWindow::SetAnimation(std::optional<Core::AirPods::Model> model)
 
 void MainWindow::PlayAnimation()
 {
-    _playback->SetActive(true);
-    _animationView->show();
+    _deviceImage->show();
 }
 
 void MainWindow::StopAnimation()
 {
-    _animationView->hide();
-    _playback->SetActive(false);
+    _deviceImage->hide();
+}
+
+void MainWindow::FadeInBattery(Widget::Battery *widget)
+{
+    if (auto iter = _batteryFades.find(widget); iter != _batteryFades.end()) {
+        iter->second->stop();
+        iter->second->start();
+    }
 }
 
 void MainWindow::BindDevice()
@@ -505,13 +522,18 @@ void MainWindow::Repaint()
     FitDeviceLabelFont(presentation.title);
     ChangeButtonAction(presentation.buttonAction);
     SetAnimation(presentation.animationModel);
+    _deviceImage->SetArrangement(
+        presentation.podsTogether ? Widget::DeviceImage::Arrangement::Together
+                                  : Widget::DeviceImage::Arrangement::Spread,
+        _isVisible);
 
-    const auto applyBattery = [](Widget::Battery *widget, const BatteryPresentation &battery) {
+    const auto applyBattery = [this](Widget::Battery *widget, const BatteryPresentation &battery) {
         if (!battery.visible) {
             widget->hide();
             return;
         }
 
+        const bool appearing = widget->isHidden() && _isVisible;
         widget->setCharging(battery.charging);
         widget->setValue(battery.value);
         static_assert(
@@ -519,6 +541,9 @@ void MainWindow::Repaint()
             "BatteryBadge and Widget::Battery::Badge must line up");
         widget->setBadge(static_cast<Widget::Battery::Badge>(battery.badge));
         widget->show();
+        if (appearing) {
+            FadeInBattery(widget);
+        }
     };
 
     applyBattery(_leftBattery, presentation.leftBattery);

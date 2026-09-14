@@ -18,7 +18,9 @@
 
 #pragma once
 
+
 #include <atomic>
+#include <map>
 #include <thread>
 
 #include <QDialog>
@@ -30,12 +32,11 @@
 
 #include "Utils.h"
 #include "MainWindowPresentation.h"
-#include "AnimationPlayback.h"
 #include "../Core/AirPods.h"
 #include "../Core/Update.h"
 #include "Base.h"
 #include "Widget/Battery.h"
-#include "Widget/AnimationView.h"
+#include "Widget/DeviceImage.h"
 
 namespace Gui {
 
@@ -85,8 +86,9 @@ private:
     QPropertyAnimation _posAnimation{this, "pos"};
     // Runs alongside the slide: the iOS sheet fades as it moves.
     QPropertyAnimation _fadeAnimation{this, "windowOpacity"};
-    Widget::AnimationView *_animationView;
-    AnimationPlayback *_playback;
+    // Battery rings fade in when they (re)appear, e.g. when merged pods split again.
+    std::map<Widget::Battery *, QPropertyAnimation *> _batteryFades;
+    Widget::DeviceImage *_deviceImage;
     QTimer *_autoHideTimer = new QTimer{this};
     // Caps how long an opened lid may keep the popup up, in case the state stops updating.
     QTimer *_lidSafetyTimer = new QTimer{this};
@@ -112,6 +114,7 @@ private:
     void SetAnimation(std::optional<Core::AirPods::Model> model);
     void PlayAnimation();
     void StopAnimation();
+    void FadeInBattery(Widget::Battery *widget);
     void BindDevice();
     void ShowDeviceSelector(std::vector<Core::Bluetooth::Device> devices);
     void ControlAutoHideTimer(bool start);

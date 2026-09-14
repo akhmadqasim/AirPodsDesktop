@@ -97,6 +97,7 @@ MainWindowPresentation MainWindowViewModel::Present() const
 
     result.title = _state->displayName;
     result.animationModel = _state->model;
+    result.podsTogether = _state->caseBox.isBothPodsInCase;
     result.leftBattery = PresentBattery(_state->pods.left, BatteryBadge::Left);
     result.rightBattery = PresentBattery(_state->pods.right, BatteryBadge::Right);
     result.caseBattery = PresentBattery(_state->caseBox, BatteryBadge::Case);

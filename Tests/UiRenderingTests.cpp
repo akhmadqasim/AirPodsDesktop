@@ -29,6 +29,7 @@
 #include "Source/Core/QuickConnect.h"
 #include "Source/Gui/MainWindow.h"
 #include "Source/Gui/Widget/Battery.h"
+#include "Source/Gui/Widget/DeviceImage.h"
 #include "Source/Gui/SettingsWindow.h"
 #include "Source/Gui/Theme.h"
 #include "Source/Gui/TrayIcon.h"
@@ -218,6 +219,42 @@ private Q_SLOTS:
         window.Disconnect();
         QVERIFY(autoHide->isActive());
         QVERIFY(!lidSafety->isActive());
+    }
+
+    void DeviceImageSlicesAndRearrangesPods()
+    {
+        const QImage source{":/Resource/Image/Animation/AirPods_Pro_2.png"};
+        QVERIFY(!source.isNull());
+        const auto slices = Gui::Widget::Detail::SliceByTransparentGaps(
+            source, (std::max)(source.width() / 50, 4)).slices;
+        QCOMPARE(slices.size(), size_t{3}); // left pod, right pod, case
+
+        Gui::Widget::DeviceImage image;
+        image.resize(260, 122);
+        image.SetSource(source);
+        const auto spread = image.CurrentComposition();
+        image.SetArrangement(Gui::Widget::DeviceImage::Arrangement::Together, false);
+        const auto together = image.CurrentComposition();
+        QVERIFY(spread != together);
+        QCOMPARE(spread.size(), together.size());
+
+        // The pods moved towards each other: the left pod's right edge shifted right and the
+        // case stayed where it was.
+        const auto edges = [](const QImage &composition) {
+            const auto s = Gui::Widget::Detail::SliceByTransparentGaps(composition, 2).slices;
+            return std::pair{s.front().right, s.back().left};
+        };
+        const auto [spreadPodEdge, spreadCaseEdge] = edges(spread);
+        const auto [togetherPodEdge, togetherCaseEdge] = edges(together);
+        QVERIFY(togetherPodEdge > spreadPodEdge);
+        QCOMPARE(togetherCaseEdge, spreadCaseEdge);
+
+        // Back to spread with animation: a cross-fade runs while visible.
+        image.show();
+        image.SetArrangement(Gui::Widget::DeviceImage::Arrangement::Spread, true);
+        QVERIFY(image.IsFading());
+        QTRY_VERIFY(!image.IsFading());
+        QCOMPARE(image.CurrentComposition(), spread);
     }
 
     void MainWindowRendersBatteryRings()

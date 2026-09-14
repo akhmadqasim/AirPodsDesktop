@@ -46,6 +46,8 @@ struct MainWindowPresentation {
     QString title;
     ButtonAction buttonAction{ButtonAction::NoButton};
     std::optional<Core::AirPods::Model> animationModel;
+    // Pods drawn next to each other while both sit in the case, apart otherwise.
+    bool podsTogether{false};
     BatteryPresentation leftBattery;
     BatteryPresentation rightBattery;
     BatteryPresentation caseBattery;

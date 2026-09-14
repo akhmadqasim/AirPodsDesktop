@@ -15,7 +15,8 @@
 namespace Gui {
 namespace {
 
-BatteryPresentation PresentBattery(const Core::AirPods::Details::BasicState &state)
+BatteryPresentation
+PresentBattery(const Core::AirPods::Details::BasicState &state, BatteryBadge badge)
 {
     if (!state.battery.Available()) {
         return {};
@@ -25,6 +26,7 @@ BatteryPresentation PresentBattery(const Core::AirPods::Details::BasicState &sta
         .visible = true,
         .charging = state.isCharging,
         .value = state.battery.Value(),
+        .badge = badge,
     };
 }
 
@@ -95,9 +97,18 @@ MainWindowPresentation MainWindowViewModel::Present() const
 
     result.title = _state->displayName;
     result.animationModel = _state->model;
-    result.leftBattery = PresentBattery(_state->pods.left);
-    result.rightBattery = PresentBattery(_state->pods.right);
-    result.caseBattery = PresentBattery(_state->caseBox);
+    result.leftBattery = PresentBattery(_state->pods.left, BatteryBadge::Left);
+    result.rightBattery = PresentBattery(_state->pods.right, BatteryBadge::Right);
+    result.caseBattery = PresentBattery(_state->caseBox, BatteryBadge::Case);
+
+    // iOS collapses the pods into one unlabelled ring while they report the same thing.
+    if (result.leftBattery.visible && result.rightBattery.visible &&
+        result.leftBattery.value == result.rightBattery.value &&
+        result.leftBattery.charging == result.rightBattery.charging)
+    {
+        result.leftBattery = {};
+        result.rightBattery.badge = BatteryBadge::None;
+    }
     return result;
 }
 

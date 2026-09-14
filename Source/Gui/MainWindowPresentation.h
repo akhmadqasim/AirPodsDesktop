@@ -26,10 +26,18 @@ enum class ButtonAction : uint32_t {
     Bind,
 };
 
+enum class BatteryBadge : uint32_t {
+    None,
+    Left,
+    Right,
+    Case,
+};
+
 struct BatteryPresentation {
     bool visible{false};
     bool charging{false};
     uint32_t value{0};
+    BatteryBadge badge{BatteryBadge::None};
 
     bool operator==(const BatteryPresentation &) const = default;
 };

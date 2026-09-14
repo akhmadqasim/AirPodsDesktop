@@ -175,7 +175,6 @@ private Q_SLOTS:
         QCOMPARE(rings.size(), 3);
         for (auto *ring : rings) {
             QCOMPARE(ring->getShape(), Gui::Widget::Battery::Shape::Ring);
-            QCOMPARE(ring->width(), ring->height());
         }
 
         Core::AirPods::State state;
@@ -190,11 +189,12 @@ private Q_SLOTS:
         state.caseBox.isLidOpened = true;
         window.UpdateState(state);
 
-        // Rings only shrink the popup's battery row; the rest of the layout is untouched.
+        // Ring plus label fit the popup's 51 px battery row; the rest of the layout is untouched.
         for (auto *ring : rings) {
             QVERIFY(ring->isVisibleTo(&window));
             QVERIFY(ring->height() <= 51);
         }
+        QCOMPARE(rings[0]->getBadge() == Gui::Widget::Battery::Badge::None, false);
 
         const auto scale = qEnvironmentVariable("QT_SCALE_FACTOR", "system");
         VerifySmoothPopupCorners(&window, QString{"main-window-battery-rings-scale%1.png"}.arg(scale));

@@ -193,7 +193,8 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
     _ui.layoutAnimation->addWidget(_animationView);
     for (auto *battery : {_leftBattery, _rightBattery, _caseBattery}) {
         battery->setShape(Widget::Battery::Shape::Ring);
-        battery->setBatterySize(44, 44);
+        battery->setTextPadding(4);
+        battery->setBatterySize(28, 28);
     }
     _ui.layoutPods->addWidget(_leftBattery);
     _ui.layoutPods->addWidget(_rightBattery);
@@ -483,6 +484,10 @@ void MainWindow::Repaint()
 
         widget->setCharging(battery.charging);
         widget->setValue(battery.value);
+        static_assert(
+            static_cast<int>(Widget::Battery::Badge::Case) == static_cast<int>(BatteryBadge::Case),
+            "BatteryBadge and Widget::Battery::Badge must line up");
+        widget->setBadge(static_cast<Widget::Battery::Badge>(battery.badge));
         widget->show();
     };
 

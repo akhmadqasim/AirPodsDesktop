@@ -58,17 +58,27 @@ class Battery : public QWidget
 public:
     using ValueType = quint32;
 
-    // `Bar` is the classic battery outline with the percentage underneath; `Ring` is a circular
-    // gauge with the percentage inside, the way Apple's Batteries widget draws it.
+    // `Bar` is the classic battery outline with the percentage underneath; `Ring` is the thin
+    // circular gauge iOS shows for AirPods: bolt inside while charging, "<badge> 95%" below.
     enum class Shape {
         Bar,
         Ring,
     };
     Q_ENUM(Shape)
 
+    // Small glyph in front of the percentage, telling which part the ring belongs to.
+    enum class Badge {
+        None,
+        Left,
+        Right,
+        Case,
+    };
+    Q_ENUM(Badge)
+
     explicit Battery(QWidget *parent = nullptr);
 
     Shape getShape() const;
+    Badge getBadge() const;
 
     ValueType getMinValue() const;
     ValueType getMaxValue() const;
@@ -94,6 +104,7 @@ public:
 
 public Q_SLOTS:
     void setShape(Shape shape);
+    void setBadge(Badge badge);
     void setRange(ValueType minValue, ValueType maxValue);
 
     void setMinValue(ValueType value);
@@ -140,6 +151,7 @@ private:
     QColor _chargingIconColor{Qt::black};
 
     Shape _shape{Shape::Bar};
+    Badge _badge{Badge::None};
     bool _isCharging{false};
     bool _isShowText{true};
     qreal _textPadding{10};
@@ -162,11 +174,14 @@ private:
 
     void drawRingTrack(QPainter &painter, const QRectF &rect, qreal penWidth);
     void drawRingProgress(QPainter &painter, const QRectF &rect, qreal penWidth);
-    void drawRingText(QPainter &painter, const QRectF &rect);
-    void drawRingChargingBadge(QPainter &painter, const QRectF &rect, qreal penWidth);
-    void drawChargingGlyph(QPainter &painter, const QRectF &rect);
+    void drawRingBolt(QPainter &painter, const QRectF &rect);
+    void drawRingLabel(QPainter &painter, const QRectF &rect);
+    void drawBadge(QPainter &painter, const QRectF &rect);
+    void drawChargingGlyph(QPainter &painter, const QRectF &rect, const QColor &color);
 
     QColor getLevelColor() const;
+    QFont getRingLabelFont() const;
+    qreal getRingBadgeWidth(const QFontMetricsF &metrics) const;
     void updateFixedSize();
 
     qreal getHeadWidth() const;

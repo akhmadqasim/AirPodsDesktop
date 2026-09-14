@@ -19,6 +19,7 @@
 #include "Battery.h"
 
 #include <QPainter>
+#include <QtMath>
 #include <QPainterPath>
 
 namespace Gui::Widget {
@@ -78,18 +79,22 @@ void Battery::paintBar(QPainter &painter)
 
 void Battery::paintRing(QPainter &painter)
 {
-    // The ring fills `_batterySize` (square); the stroke scales with it so that the gauge keeps
-    // its proportions at every size the callers pick.
+    // Ring on top, centred; label underneath. `_batterySize` is the ring's diameter.
     const qreal diameter = qMin(_batterySize.width(), _batterySize.height());
-    const qreal penWidth = qMax(diameter * 0.12, 2.0);
+    const qreal penWidth = qMax(diameter * 0.09, 2.0);
     const QRectF ringRect{
-        penWidth / 2.0 + (width() - diameter) / 2.0, penWidth / 2.0, diameter - penWidth,
+        (width() - diameter) / 2.0 + penWidth / 2.0, penWidth / 2.0, diameter - penWidth,
         diameter - penWidth};
 
     drawRingTrack(painter, ringRect, penWidth);
     drawRingProgress(painter, ringRect, penWidth);
-    drawRingText(painter, ringRect);
-    drawRingChargingBadge(painter, ringRect, penWidth);
+    drawRingBolt(painter, ringRect);
+
+    if (_isShowText) {
+        const QFontMetricsF metrics{getRingLabelFont()};
+        const QRectF labelRect{0.0, diameter + _textPadding, (qreal)width(), metrics.height()};
+        drawRingLabel(painter, labelRect);
+    }
 }
 
 void Battery::drawRingTrack(QPainter &painter, const QRectF &rect, qreal penWidth)
@@ -126,31 +131,7 @@ void Battery::drawRingProgress(QPainter &painter, const QRectF &rect, qreal penW
     painter.restore();
 }
 
-void Battery::drawRingText(QPainter &painter, const QRectF &rect)
-{
-    if (!_isShowText) {
-        return;
-    }
-
-    painter.save();
-    {
-        // Shrink the label until "100%" fits inside the ring's hole.
-        const QString text = QString{"%1%"}.arg(_value);
-        const qreal inner = rect.width() * 0.72;
-        QFont font = this->font();
-        for (qreal size = qMax(rect.width() * 0.32, 6.0); size >= 5.0; size -= 0.5) {
-            font.setPointSizeF(size);
-            if (QFontMetricsF{font}.horizontalAdvance("100%") <= inner) {
-                break;
-            }
-        }
-        painter.setFont(font);
-        painter.drawText(rect, Qt::AlignCenter, text);
-    }
-    painter.restore();
-}
-
-void Battery::drawRingChargingBadge(QPainter &painter, const QRectF &rect, qreal penWidth)
+void Battery::drawRingBolt(QPainter &painter, const QRectF &rect)
 {
     if (!_isCharging) {
         return;
@@ -158,22 +139,81 @@ void Battery::drawRingChargingBadge(QPainter &painter, const QRectF &rect, qreal
 
     painter.save();
     {
-        // A small bolt sits on the ring at 6 o'clock, cut out from the track so it stays legible.
-        const qreal badge = qMax(penWidth * 2.2, 8.0);
-        const QRectF badgeRect{
-            rect.center().x() - badge / 2.0, rect.bottom() - badge / 2.0, badge, badge};
-
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(palette().color(QPalette::Window));
-        painter.drawEllipse(badgeRect);
-
-        const qreal inset = badge * 0.22;
-        drawChargingGlyph(painter, badgeRect.adjusted(inset, inset * 0.6, -inset, -inset * 0.6));
+        const qreal boltHeight = rect.height() * 0.5;
+        const qreal boltWidth = boltHeight * 0.62;
+        const QRectF boltRect{
+            rect.center().x() - boltWidth / 2.0, rect.center().y() - boltHeight / 2.0, boltWidth,
+            boltHeight};
+        drawChargingGlyph(painter, boltRect, getLevelColor());
     }
     painter.restore();
 }
 
-void Battery::drawChargingGlyph(QPainter &painter, const QRectF &rect)
+void Battery::drawRingLabel(QPainter &painter, const QRectF &rect)
+{
+    painter.save();
+    {
+        const QFont font = getRingLabelFont();
+        const QFontMetricsF metrics{font};
+        const QString text = QString{"%1%"}.arg(_value);
+        const qreal badgeWidth = getRingBadgeWidth(metrics);
+        const qreal textWidth = metrics.horizontalAdvance(text);
+        const qreal left = rect.center().x() - (badgeWidth + textWidth) / 2.0;
+
+        if (badgeWidth > 0.0) {
+            const qreal side = metrics.height() * 0.78;
+            drawBadge(painter, QRectF{left, rect.center().y() - side / 2.0, side, side});
+        }
+
+        painter.setFont(font);
+        painter.drawText(
+            QRectF{left + badgeWidth, rect.top(), textWidth, rect.height()},
+            Qt::AlignLeft | Qt::AlignVCenter, text);
+    }
+    painter.restore();
+}
+
+void Battery::drawBadge(QPainter &painter, const QRectF &rect)
+{
+    painter.save();
+    {
+        const QColor fill = palette().color(QPalette::WindowText);
+        const QColor cutout = palette().color(QPalette::Window);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(fill);
+
+        switch (_badge) {
+        case Badge::Left:
+        case Badge::Right: {
+            painter.drawEllipse(rect);
+            QFont letter = getRingLabelFont();
+            letter.setBold(true);
+            letter.setPointSizeF(letter.pointSizeF() * 0.62);
+            painter.setFont(letter);
+            painter.setPen(cutout);
+            painter.drawText(rect, Qt::AlignCenter, _badge == Badge::Left ? "L" : "R");
+            break;
+        }
+        case Badge::Case: {
+            // Closed case seen from the front: a rounded box with the lid seam near the top.
+            const qreal boxHeight = rect.height() * 0.72;
+            const QRectF box{
+                rect.left(), rect.center().y() - boxHeight / 2.0, rect.width(), boxHeight};
+            painter.drawRoundedRect(box, boxHeight * 0.28, boxHeight * 0.28);
+            painter.setBrush(cutout);
+            const qreal seam = qMax(boxHeight * 0.12, 1.0);
+            painter.drawRect(QRectF{
+                box.left() + seam, box.top() + boxHeight * 0.32, box.width() - seam * 2.0, seam});
+            break;
+        }
+        case Badge::None:
+            break;
+        }
+    }
+    painter.restore();
+}
+
+void Battery::drawChargingGlyph(QPainter &painter, const QRectF &rect, const QColor &color)
 {
     // Same silhouette as `drawChargingIcon`, expressed in unit coordinates so it can be
     // placed anywhere.
@@ -191,7 +231,20 @@ void Battery::drawChargingGlyph(QPainter &painter, const QRectF &rect)
     transform.scale(rect.width(), rect.height());
 
     painter.setPen(Qt::NoPen);
-    painter.fillPath(transform.map(path), QBrush{_chargingIconColor});
+    painter.fillPath(transform.map(path), QBrush{color});
+}
+
+QFont Battery::getRingLabelFont() const
+{
+    // iOS labels the rings in regular weight; the bold widget font is for the bar's text.
+    QFont font = this->font();
+    font.setBold(false);
+    return font;
+}
+
+qreal Battery::getRingBadgeWidth(const QFontMetricsF &metrics) const
+{
+    return _badge == Badge::None ? 0.0 : metrics.height() * 0.78 + metrics.horizontalAdvance(" ");
 }
 
 QColor Battery::getLevelColor() const
@@ -304,6 +357,20 @@ void Battery::drawText(QPainter &painter)
 auto Battery::getShape() const -> Shape
 {
     return _shape;
+}
+
+auto Battery::getBadge() const -> Badge
+{
+    return _badge;
+}
+
+void Battery::setBadge(Badge badge)
+{
+    if (_badge == badge) {
+        return;
+    }
+    _badge = badge;
+    updateFixedSize();
 }
 
 void Battery::setShape(Shape shape)
@@ -555,8 +622,12 @@ void Battery::setBatterySize(int width, int height)
 void Battery::updateFixedSize()
 {
     if (_shape == Shape::Ring) {
-        const int diameter = qRound(qMin(_batterySize.width(), _batterySize.height()));
-        setFixedSize(diameter, diameter);
+        const qreal diameter = qMin(_batterySize.width(), _batterySize.height());
+        const QFontMetricsF metrics{getRingLabelFont()};
+        const qreal labelWidth = getRingBadgeWidth(metrics) + metrics.horizontalAdvance("100%");
+        setFixedSize(
+            qCeil(qMax(diameter, labelWidth)),
+            qCeil(diameter + (_isShowText ? (_textPadding + metrics.height()) : 0.0)));
     }
     else {
         QFontMetrics fontMetrics{this->fontMetrics()};

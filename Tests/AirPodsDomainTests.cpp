@@ -242,6 +242,7 @@ private Q_SLOTS:
     void PresentsMainWindowLifecycleStates();
     void PresentsMainWindowDeviceState();
     void PresentsMainWindowCaseBattery();
+    void MergesMatchingPodBatteries();
     void MapsMainWindowAnimationResources();
     void ConvertsTaskbarGeometryAcrossDpiBoundaries();
 };
@@ -1019,7 +1020,36 @@ void AirPodsDomainTests::PresentsMainWindowDeviceState()
     QCOMPARE(presentation.leftBattery.value, 80U);
     QVERIFY(presentation.rightBattery.visible);
     QCOMPARE(presentation.rightBattery.value, 60U);
+    QCOMPARE(presentation.leftBattery.badge, Gui::BatteryBadge::Left);
+    QCOMPARE(presentation.rightBattery.badge, Gui::BatteryBadge::Right);
     QVERIFY(!presentation.caseBattery.visible);
+}
+
+void AirPodsDomainTests::MergesMatchingPodBatteries()
+{
+    Core::AirPods::State state;
+    state.model = Core::AirPods::Model::AirPods_Pro_2;
+    state.pods.left.battery = 95;
+    state.pods.right.battery = 95;
+    state.caseBox.battery = 99;
+
+    Gui::MainWindowViewModel viewModel;
+    viewModel.UpdateState(state);
+    auto presentation = viewModel.Present();
+
+    QVERIFY(!presentation.leftBattery.visible);
+    QVERIFY(presentation.rightBattery.visible);
+    QCOMPARE(presentation.rightBattery.value, 95U);
+    QCOMPARE(presentation.rightBattery.badge, Gui::BatteryBadge::None);
+    QCOMPARE(presentation.caseBattery.badge, Gui::BatteryBadge::Case);
+
+    // Same level but only one side charging: shown separately again.
+    state.pods.right.isCharging = true;
+    viewModel.UpdateState(state);
+    presentation = viewModel.Present();
+    QVERIFY(presentation.leftBattery.visible);
+    QCOMPARE(presentation.leftBattery.badge, Gui::BatteryBadge::Left);
+    QCOMPARE(presentation.rightBattery.badge, Gui::BatteryBadge::Right);
 }
 
 void AirPodsDomainTests::PresentsMainWindowCaseBattery()

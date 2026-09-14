@@ -101,13 +101,17 @@ MainWindowPresentation MainWindowViewModel::Present() const
     result.rightBattery = PresentBattery(_state->pods.right, BatteryBadge::Right);
     result.caseBattery = PresentBattery(_state->caseBox, BatteryBadge::Case);
 
-    // iOS collapses the pods into one unlabelled ring while they report the same thing.
+    // iOS collapses the pods into one unlabelled ring while they report the same thing, and
+    // drops the case glyph too once both pods sit in the case (nothing left to tell apart).
     if (result.leftBattery.visible && result.rightBattery.visible &&
         result.leftBattery.value == result.rightBattery.value &&
         result.leftBattery.charging == result.rightBattery.charging)
     {
         result.leftBattery = {};
         result.rightBattery.badge = BatteryBadge::None;
+    }
+    if (_state->caseBox.isBothPodsInCase) {
+        result.caseBattery.badge = BatteryBadge::None;
     }
     return result;
 }

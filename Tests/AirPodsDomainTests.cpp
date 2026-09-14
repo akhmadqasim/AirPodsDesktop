@@ -1043,6 +1043,12 @@ void AirPodsDomainTests::MergesMatchingPodBatteries()
     QCOMPARE(presentation.rightBattery.badge, Gui::BatteryBadge::None);
     QCOMPARE(presentation.caseBattery.badge, Gui::BatteryBadge::Case);
 
+    // Both pods in the case: the case glyph goes away as well.
+    state.caseBox.isBothPodsInCase = true;
+    viewModel.UpdateState(state);
+    QCOMPARE(viewModel.Present().caseBattery.badge, Gui::BatteryBadge::None);
+    state.caseBox.isBothPodsInCase = false;
+
     // Same level but only one side charging: shown separately again.
     state.pods.right.isCharging = true;
     viewModel.UpdateState(state);

@@ -84,8 +84,6 @@ private:
     Ui::MainWindow _ui;
 
     QPropertyAnimation _posAnimation{this, "pos"};
-    // Runs alongside the slide: the iOS sheet fades as it moves.
-    QPropertyAnimation _fadeAnimation{this, "windowOpacity"};
     // Battery rings fade in when they (re)appear, e.g. when merged pods split again.
     std::map<Widget::Battery *, QPropertyAnimation *> _batteryFades;
     Widget::DeviceImage *_deviceImage;

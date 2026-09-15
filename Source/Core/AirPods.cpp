@@ -65,7 +65,9 @@ std::optional<State> Details::BuildAapState(Model model, const AapSnapshot &snap
     using AapProtocol::ChargeStatus;
     using AapProtocol::EarState;
 
-    if (!snapshot.battery.has_value()) {
+    // Both reports are needed: a state built from the battery alone would say "not in ear" and
+    // pause whatever is playing, a moment before the ear report says otherwise.
+    if (!snapshot.battery.has_value() || !snapshot.ear.has_value()) {
         return std::nullopt;
     }
     const auto &battery = *snapshot.battery;

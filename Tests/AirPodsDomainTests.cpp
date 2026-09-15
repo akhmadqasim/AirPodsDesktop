@@ -721,6 +721,11 @@ void AirPodsDomainTests::AapStateWaitsForBatteryReport()
     snapshot.ear = EarStatus{EarState::InEar, EarState::InEar};
     QVERIFY(!BuildAapState(Core::AirPods::Model::AirPods_Pro_2, snapshot).has_value());
 
+    // Battery alone is not enough either: it would read as "out of ear" and pause the media.
+    AapSnapshot batteryOnly;
+    batteryOnly.battery = BatteryStatus{.left = BatteryReading{50, ChargeStatus::Discharging}};
+    QVERIFY(!BuildAapState(Core::AirPods::Model::AirPods_Pro_2, batteryOnly).has_value());
+
     snapshot.battery = BatteryStatus{.left = BatteryReading{50, ChargeStatus::Discharging}};
     auto state = BuildAapState(Core::AirPods::Model::AirPods_Pro_2, snapshot);
     QVERIFY(state.has_value());

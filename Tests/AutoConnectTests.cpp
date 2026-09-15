@@ -175,6 +175,9 @@ void AutoConnectTests::PolicyGates()
     QVERIFY(policy.ShouldConnect(now));
     policy.lastInEar = now - 11s;
     QVERIFY(!policy.ShouldWatch(now)); // stale
+    policy.options.earStaleAfter = 0s;
+    QVERIFY(policy.ShouldWatch(now)); // never stale: reports only come on change
+    policy.options.earStaleAfter = 10s;
     policy.lastInEar = now;
 
     policy.deviceConnected = true;

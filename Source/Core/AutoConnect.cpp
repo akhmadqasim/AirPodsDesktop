@@ -24,7 +24,10 @@ namespace Core::AutoConnect {
 
 bool Policy::AnyInEar(Clock::time_point now) const
 {
-    return lastInEar.has_value() && now - *lastInEar <= options.earStaleAfter;
+    if (!lastInEar.has_value()) {
+        return false;
+    }
+    return options.earStaleAfter.count() == 0 || now - *lastInEar <= options.earStaleAfter;
 }
 
 bool Policy::ShouldWatch(Clock::time_point now) const
@@ -77,7 +80,9 @@ void Coordinator::OnStateUpdated(const Core::AirPods::State &state)
     const bool wasInEar = _policy.AnyInEar(Policy::Clock::now());
     if (anyInEar) {
         _policy.lastInEar = Policy::Clock::now();
-        _earStaleTimer.start(_policy.options.earStaleAfter);
+        if (_policy.options.earStaleAfter.count() > 0) {
+            _earStaleTimer.start(_policy.options.earStaleAfter);
+        }
     }
     else {
         _policy.lastInEar.reset();

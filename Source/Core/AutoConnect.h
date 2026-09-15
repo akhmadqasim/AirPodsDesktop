@@ -39,8 +39,10 @@ struct Policy {
     using Clock = std::chrono::steady_clock;
 
     struct Options {
-        std::chrono::milliseconds earStaleAfter{std::chrono::seconds{10}};
-        std::chrono::milliseconds cooldownAfterLinkDrop{std::chrono::seconds{30}};
+        // Zero: the last report stands until the next one (state reports only arrive on change;
+        // a lost signal comes as its own event).
+        std::chrono::milliseconds earStaleAfter{0};
+        std::chrono::milliseconds cooldownAfterLinkDrop{std::chrono::seconds{5}};
         std::chrono::milliseconds cooldownAfterFailure{std::chrono::seconds{60}};
     };
 

@@ -195,6 +195,7 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
     _lidSafetyTimer->setObjectName("lidSafetyTimer");
     _lidSafetyTimer->setSingleShot(true);
     _lidSafetyTimer->callOnTimeout([this] { DoHide(); });
+    _podsRowGeometry = _ui.podsBatteryContainer->geometry();
     _podsOnlyTimer->setObjectName("podsOnlyTimer");
     _podsOnlyTimer->setSingleShot(true);
     _podsOnlyTimer->callOnTimeout([this] {
@@ -437,6 +438,16 @@ void MainWindow::ApplyScene(Scene scene)
     _deviceImage->SetArrangement(
         scene == Scene::PodsOnly ? Arrangement::PodsOnly : Arrangement::Spread, _isVisible);
     SetRotating(scene == Scene::PodsInCase || scene == Scene::BothPodsOut);
+
+    // Pods only: the single ring takes the whole row so it sits under the centred pair.
+    const QRect podsRow = _ui.podsBatteryContainer->geometry();
+    const QRect centredRow{
+        _podsRowGeometry.x(), _podsRowGeometry.y(), width() - 2 * _podsRowGeometry.x(),
+        _podsRowGeometry.height()};
+    const QRect fullRow = scene == Scene::PodsOnly ? centredRow : _podsRowGeometry;
+    if (podsRow != fullRow) {
+        _ui.podsBatteryContainer->setGeometry(fullRow);
+    }
 }
 
 void MainWindow::SetRotating(bool rotating)

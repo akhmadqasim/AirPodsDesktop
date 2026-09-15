@@ -80,8 +80,9 @@ ImageSlices SliceByTransparentGaps(const QImage &image, int minGap)
 DeviceImage::DeviceImage(QWidget *parent) : QWidget{parent}
 {
     setAttribute(Qt::WA_TranslucentBackground);
-    _fade.setDuration(800);
-    _fade.setEasingCurve(QEasingCurve::InOutSine);
+    // Sequential: the old picture fades out completely, then the new one fades in.
+    _fade.setDuration(1000);
+    _fade.setEasingCurve(QEasingCurve::Linear);
     _fade.setStartValue(0.0);
     _fade.setEndValue(1.0);
     connect(&_fade, &QVariantAnimation::valueChanged, this, [this] { update(); });
@@ -262,8 +263,13 @@ void DeviceImage::paintEvent(QPaintEvent *)
 
     if (IsFading()) {
         const qreal t = _fade.currentValue().toReal();
-        DrawFitted(painter, _previous, _previousScaled, 1.0 - t);
-        DrawFitted(painter, _current, _currentScaled, t);
+        const QEasingCurve ease{QEasingCurve::InOutSine};
+        if (t < 0.5) {
+            DrawFitted(painter, _previous, _previousScaled, 1.0 - ease.valueForProgress(t * 2.0));
+        }
+        else {
+            DrawFitted(painter, _current, _currentScaled, ease.valueForProgress(t * 2.0 - 1.0));
+        }
     }
     else {
         DrawFitted(painter, _current, _currentScaled, 1.0);

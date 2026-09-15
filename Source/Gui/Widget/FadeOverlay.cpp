@@ -29,8 +29,9 @@ FadeOverlay::FadeOverlay(QWidget *parent) : QWidget{parent}
     setAttribute(Qt::WA_NoSystemBackground);
     _fade.setStartValue(1.0);
     _fade.setEndValue(0.0);
-    _fade.setDuration(800);
-    _fade.setEasingCurve(QEasingCurve::InOutSine);
+    // Sequential: the snapshot fades out over the window colour, then the new content fades in.
+    _fade.setDuration(1000);
+    _fade.setEasingCurve(QEasingCurve::Linear);
     connect(&_fade, &QVariantAnimation::valueChanged, this, [this] { update(); });
     connect(&_fade, &QVariantAnimation::finished, this, [this] {
         _snapshot = {};
@@ -68,9 +69,24 @@ void FadeOverlay::paintEvent(QPaintEvent *)
     if (_snapshot.isNull()) {
         return;
     }
+    if (!IsRunning()) {
+        return;
+    }
+    const qreal t = _fade.currentValue().toReal();
+    const QEasingCurve ease{QEasingCurve::InOutSine};
+    const QColor cover = parentWidget() ? parentWidget()->palette().color(QPalette::Window)
+                                        : palette().color(QPalette::Window);
+
     QPainter painter{this};
-    painter.setOpacity(IsRunning() ? _fade.currentValue().toReal() : 0.0);
-    painter.drawPixmap(rect(), _snapshot);
+    if (t < 0.5) {
+        painter.fillRect(rect(), cover);
+        painter.setOpacity(1.0 - ease.valueForProgress(t * 2.0));
+        painter.drawPixmap(rect(), _snapshot);
+    }
+    else {
+        painter.setOpacity(1.0 - ease.valueForProgress(t * 2.0 - 1.0));
+        painter.fillRect(rect(), cover);
+    }
 }
 
 } // namespace Gui::Widget

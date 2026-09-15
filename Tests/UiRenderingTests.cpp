@@ -266,6 +266,44 @@ private Q_SLOTS:
         QCOMPARE(image.CurrentComposition(), spread);
     }
 
+    void MainWindowCentresTheLonePodsRing()
+    {
+        Gui::MainWindow window;
+        auto *timer = window.findChild<QTimer *>("podsOnlyTimer");
+        QVERIFY(timer != nullptr);
+
+        Core::AirPods::State state;
+        state.model = Core::AirPods::Model::AirPods_Pro_2_USB_C;
+        state.displayName = QStringLiteral("AirPods Pro");
+        state.pods.left.battery = Core::AirPods::Battery{97};
+        state.pods.right.battery = Core::AirPods::Battery{95};
+        state.pods.left.isInEar = state.pods.right.isInEar = true;
+        window.UpdateState(state);
+        window.Show();
+        QTRY_VERIFY(window.isVisible());
+        QVERIFY(timer->isActive());
+
+        timer->start(0);
+        QTRY_VERIFY(!timer->isActive());
+        QCoreApplication::processEvents();
+
+        auto rings = window.findChildren<Gui::Widget::Battery *>();
+        Gui::Widget::Battery *shown = nullptr;
+        for (auto *ring : rings) {
+            if (ring->isVisibleTo(&window)) {
+                QVERIFY(shown == nullptr);
+                shown = ring;
+            }
+        }
+        QVERIFY(shown != nullptr);
+        QCOMPARE(shown->getValue(), 95u);
+        const int ringCentre = shown->mapTo(&window, shown->rect().center()).x();
+        QVERIFY(std::abs(ringCentre - window.width() / 2) <= 3);
+
+        const auto scale = qEnvironmentVariable("QT_SCALE_FACTOR", "system");
+        VerifySmoothPopupCorners(&window, QString{"main-window-pods-only-scale%1.png"}.arg(scale));
+    }
+
     void MainWindowRendersBatteryRings()
     {
         Gui::MainWindow window;

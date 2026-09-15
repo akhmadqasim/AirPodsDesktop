@@ -286,10 +286,6 @@ You need to pair your AirPods in Windows Bluetooth Settings first.</source>
         <translation>Переключено на другое устройство</translation>
     </message>
     <message>
-        <source>When audio starts playing on this PC while an AirPod is in your ear, the AirPods switch over from the other device.</source>
-        <translation>Когда на этом ПК начинается воспроизведение звука, а AirPod находится в ухе, AirPods переключаются с другого устройства.</translation>
-    </message>
-    <message>
         <source>Connecting…</source>
         <translation>Подключение…</translation>
     </message>
@@ -390,10 +386,6 @@ You need to pair your AirPods in Windows Bluetooth Settings first.</source>
     <message>
         <source>Low audio latency</source>
         <translation>Низкая задержка звука</translation>
-    </message>
-    <message>
-        <source>Automatic switching</source>
-        <translation>Автоматическое переключение</translation>
     </message>
     <message>
         <source>About</source>

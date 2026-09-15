@@ -141,14 +141,6 @@ void OnApply_tray_quick_connect_enabled(const Fields &newFields)
     });
 }
 
-void OnApply_auto_switch(const Fields &newFields)
-{
-    LOG(Info, "OnApply_auto_switch: {}", newFields.auto_switch);
-
-    Impl::NotifyApplyObserver(
-        [&](ApplyObserver &observer) { observer.OnAutoSwitchChanged(newFields.auto_switch); });
-}
-
 void OnApply_tray_quick_connect_device_id(const Fields &newFields)
 {
     LOG(Info, "OnApply_tray_quick_connect_device_id: {}",

@@ -286,10 +286,6 @@ Precisa primeiro de emparelhar os seus AirPods nas definições de Bluetooth do 
         <translation>Mudou para outro dispositivo</translation>
     </message>
     <message>
-        <source>When audio starts playing on this PC while an AirPod is in your ear, the AirPods switch over from the other device.</source>
-        <translation>Quando o áudio começa a ser reproduzido neste PC com um AirPod no ouvido, os AirPods mudam do outro dispositivo para cá.</translation>
-    </message>
-    <message>
         <source>Connecting…</source>
         <translation>A ligar…</translation>
     </message>
@@ -390,10 +386,6 @@ Precisa primeiro de emparelhar os seus AirPods nas definições de Bluetooth do 
     <message>
         <source>Low audio latency</source>
         <translation>Baixa latência de áudio</translation>
-    </message>
-    <message>
-        <source>Automatic switching</source>
-        <translation>Mudança automática</translation>
     </message>
     <message>
         <source>About</source>

@@ -44,15 +44,6 @@ class Backend;
 class Controller;
 } // namespace Core::QuickConnect
 
-namespace Core::AudioActivity {
-class Backend;
-class Monitor;
-} // namespace Core::AudioActivity
-
-namespace Core::AutoConnect {
-class Coordinator;
-}
-
 namespace Gui {
 class LinkBanner;
 }
@@ -106,9 +97,6 @@ private:
     std::unique_ptr<Core::QuickConnect::Controller> _quickConnect;
     std::shared_ptr<Core::Aap::Backend> _aapBackend;
     std::unique_ptr<Core::Aap::Client> _aap;
-    std::shared_ptr<Core::AudioActivity::Backend> _audioActivityBackend;
-    std::unique_ptr<Core::AudioActivity::Monitor> _audioActivity;
-    std::unique_ptr<Core::AutoConnect::Coordinator> _autoConnect;
     std::unique_ptr<Gui::LinkBanner> _linkBanner;
     std::unique_ptr<Gui::TrayIcon> _trayIcon;
     std::unique_ptr<Gui::TaskbarStatus> _taskbarStatus;
@@ -135,7 +123,6 @@ private:
     void OnDeviceAddressChanged(uint64_t address) override;
     void OnTrayIconBatteryChanged(Core::Settings::TrayIconBatteryBehavior behavior) override;
     void OnTrayQuickConnectEnabledChanged(bool enable) override;
-    void OnAutoSwitchChanged(bool enable) override;
     void OnTrayQuickConnectDeviceChanged(const QString &deviceId) override;
     void OnTaskbarBatteryChanged(Core::Settings::TaskbarStatusBehavior behavior) override;
 };

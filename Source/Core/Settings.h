@@ -52,7 +52,6 @@ public:
     virtual void OnDeviceAddressChanged(uint64_t address) = 0;
     virtual void OnTrayIconBatteryChanged(TrayIconBatteryBehavior behavior) = 0;
     virtual void OnTrayQuickConnectEnabledChanged(bool enable) = 0;
-    virtual void OnAutoSwitchChanged(bool enable) = 0;
     virtual void OnTrayQuickConnectDeviceChanged(const QString &deviceId) = 0;
     virtual void OnTaskbarBatteryChanged(TaskbarStatusBehavior behavior) = 0;
 };
@@ -91,10 +90,7 @@ void SetRepository(std::unique_ptr<Repository> repository);
         Impl::OnApply(&OnApply_tray_quick_connect_device_id),                                       \
         Impl::Sensitive{})                                                                          \
     callback(TaskbarStatusBehavior, battery_on_taskbar, {TaskbarStatusBehavior::Disable},          \
-        Impl::OnApply(&OnApply_battery_on_taskbar))                                                \
-    callback(bool, auto_switch, {true},                                                            \
-        Impl::OnApply(&OnApply_auto_switch),                                                       \
-        Impl::Desc{QT_TRANSLATE_NOOP("QObject", "When audio starts playing on this PC while an AirPod is in your ear, the AirPods switch over from the other device.")})
+        Impl::OnApply(&OnApply_battery_on_taskbar))
 // clang-format on
 
 struct Fields {
@@ -257,7 +253,6 @@ void OnApply_rssi_min(const Fields &newFields);
 void OnApply_device_address(const Fields &newFields);
 void OnApply_tray_icon_battery(const Fields &newFields);
 void OnApply_tray_quick_connect_enabled(const Fields &newFields);
-void OnApply_auto_switch(const Fields &newFields);
 void OnApply_tray_quick_connect_device_id(const Fields &newFields);
 void OnApply_battery_on_taskbar(const Fields &newFields);
 

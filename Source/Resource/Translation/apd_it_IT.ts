@@ -287,10 +287,6 @@ Devi prima abbinare le tue AirPods nelle impostazioni Bluetooth di Windows.</tra
         <translation>Passato a un altro dispositivo</translation>
     </message>
     <message>
-        <source>When audio starts playing on this PC while an AirPod is in your ear, the AirPods switch over from the other device.</source>
-        <translation>Quando su questo PC inizia la riproduzione audio mentre un AirPod è nell'orecchio, gli AirPods passano dall'altro dispositivo.</translation>
-    </message>
-    <message>
         <source>Connecting…</source>
         <translation>Connessione…</translation>
     </message>
@@ -391,10 +387,6 @@ Devi prima abbinare le tue AirPods nelle impostazioni Bluetooth di Windows.</tra
     <message>
         <source>Low audio latency</source>
         <translation>Audio a bassa latenza</translation>
-    </message>
-    <message>
-        <source>Automatic switching</source>
-        <translation>Passaggio automatico</translation>
     </message>
     <message>
         <source>About</source>

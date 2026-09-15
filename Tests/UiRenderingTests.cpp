@@ -27,6 +27,7 @@
 
 #include "Source/Core/Aap.h"
 #include "Source/Core/QuickConnect.h"
+#include "Source/Gui/LinkBanner.h"
 #include "Source/Gui/MainWindow.h"
 #include "Source/Gui/Widget/Battery.h"
 #include "Source/Gui/Widget/DeviceImage.h"
@@ -256,6 +257,43 @@ private Q_SLOTS:
         auto *label = window.findChild<QLabel *>("deviceLabel");
         QVERIFY(label != nullptr);
         QCOMPARE(label->text(), state.displayName);
+    }
+
+    void LinkBannerOffersToBringThePodsBack()
+    {
+        Gui::LinkBanner banner;
+        QSignalSpy returns{&banner, &Gui::LinkBanner::ReturnRequested};
+        auto *dismiss = banner.findChild<QTimer *>("bannerDismissTimer");
+        QVERIFY(dismiss != nullptr);
+
+        Core::AirPods::State state;
+        state.model = Core::AirPods::Model::AirPods_Pro_2;
+        banner.UpdateState(state);
+        banner.ShowMovedAway();
+        QTRY_VERIFY(banner.isVisible());
+        QCOMPARE(banner.Text(), QString{"Moved to another device"});
+        QVERIFY(banner.IsButtonShown());
+        QVERIFY(dismiss->isActive());
+
+        const auto outputDir = QStringLiteral(APD_BINARY_DIR "/UiValidation/");
+        QVERIFY(QDir{}.mkpath(outputDir));
+        const auto image = banner.grab().toImage();
+        QVERIFY(image.save(outputDir + "link-banner.png"));
+        // Black pill with a blue button on the right and a transparent corner.
+        const auto button = banner.ButtonRect().center();
+        const QPoint blueEdge = QPoint{banner.ButtonRect().left() + 5, button.y()} *
+                                image.devicePixelRatio();
+        QVERIFY(qBlue(image.pixel(blueEdge)) > 200 && qRed(image.pixel(blueEdge)) < 60);
+        QCOMPARE(qAlpha(image.pixel(0, 0)), 0);
+
+        QTest::mouseClick(&banner, Qt::LeftButton, Qt::NoModifier, button);
+        QCOMPARE(returns.count(), 1);
+
+        banner.ShowConnecting();
+        QVERIFY(!banner.IsButtonShown());
+        QCOMPARE(banner.Text(), QString{"Connecting…"});
+        banner.Dismiss();
+        QTRY_VERIFY(!banner.isVisible());
     }
 
     void DeviceImageSlicesAndRearrangesPods()

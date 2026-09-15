@@ -108,13 +108,16 @@ public:
     void RefreshDevices();
     Outcome Request();
     // Same as `Request()` for a device the caller names, regardless of the tray-click setting.
-    Outcome RequestDevice(const QString &deviceId);
+    // A quiet request reports through `QuietOutcomeChanged` instead, so automation does not
+    // raise tray balloons.
+    Outcome RequestDevice(const QString &deviceId, bool quiet = false);
     Outcome OnEndpointStateChanged(const QString &id, bool connected);
     Outcome ResolveTimedOut();
 
 signals:
     void DevicesChanged();
     void OutcomeChanged(Core::QuickConnect::Outcome outcome, QString deviceName);
+    void QuietOutcomeChanged(Core::QuickConnect::Outcome outcome, QString deviceName);
 
 private:
     // Lets a worker post back without ever dereferencing a Controller that has started tearing
@@ -128,6 +131,7 @@ private:
     std::shared_ptr<Backend> _backend;
     std::shared_ptr<Link> _link{std::make_shared<Link>()};
     bool _enabled{};
+    bool _quiet{};
     bool _pending{};
     QString _deviceId;
     QString _pendingDeviceId;

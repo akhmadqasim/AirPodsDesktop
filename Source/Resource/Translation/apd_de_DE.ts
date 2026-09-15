@@ -286,6 +286,18 @@ Kopple deine AirPods zuerst in den Windows Bluetooth-Einstellungen.</translation
         <translation>Zu einem anderen Gerät gewechselt</translation>
     </message>
     <message>
+        <source>When audio starts playing on this PC while an AirPod is in your ear, the AirPods switch over from the other device.</source>
+        <translation>Wenn auf diesem PC Audio startet, während ein AirPod im Ohr sitzt, wechseln die AirPods vom anderen Gerät herüber.</translation>
+    </message>
+    <message>
+        <source>Connecting…</source>
+        <translation>Verbinden…</translation>
+    </message>
+    <message>
+        <source>Could not connect</source>
+        <translation>Verbindung fehlgeschlagen</translation>
+    </message>
+    <message>
         <source>Waiting for Binding</source>
         <translation>Warte auf Verbindung</translation>
     </message>
@@ -366,6 +378,10 @@ Kopple deine AirPods zuerst in den Windows Bluetooth-Einstellungen.</translation
     <message>
         <source>Low audio latency</source>
         <translation>Niedrige Audiolatenz</translation>
+    </message>
+    <message>
+        <source>Automatic switching</source>
+        <translation>Automatischer Wechsel</translation>
     </message>
     <message>
         <source>About</source>

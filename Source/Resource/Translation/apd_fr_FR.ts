@@ -286,6 +286,18 @@ Vous devez d&apos;abord appairer vos AirPods dans les paramètres Bluetooth de W
         <translation>Passé à un autre appareil</translation>
     </message>
     <message>
+        <source>When audio starts playing on this PC while an AirPod is in your ear, the AirPods switch over from the other device.</source>
+        <translation>Lorsqu'un son démarre sur ce PC alors qu'un AirPod est dans votre oreille, les AirPods basculent depuis l'autre appareil.</translation>
+    </message>
+    <message>
+        <source>Connecting…</source>
+        <translation>Connexion…</translation>
+    </message>
+    <message>
+        <source>Could not connect</source>
+        <translation>Connexion impossible</translation>
+    </message>
+    <message>
         <source>Waiting for Binding</source>
         <translation>En attente de connexion</translation>
     </message>
@@ -378,6 +390,10 @@ Vous devez d&apos;abord appairer vos AirPods dans les paramètres Bluetooth de W
     <message>
         <source>Low audio latency</source>
         <translation>Faible latence audio</translation>
+    </message>
+    <message>
+        <source>Automatic switching</source>
+        <translation>Basculement automatique</translation>
     </message>
     <message>
         <source>About</source>

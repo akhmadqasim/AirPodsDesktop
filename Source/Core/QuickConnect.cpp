@@ -175,14 +175,17 @@ Outcome Controller::Request()
     return RequestDevice(_deviceId);
 }
 
-Outcome Controller::RequestDevice(const QString &deviceId)
+Outcome Controller::RequestDevice(const QString &deviceId, bool quiet)
 {
     if (_pending || _requestRunning) {
-        EmitOutcome(Outcome::RequestStarted, _pending ? _pendingDeviceName
-                                                      : DeviceNameFor(_requestingDeviceId));
+        if (!quiet) {
+            EmitOutcome(Outcome::RequestStarted, _pending ? _pendingDeviceName
+                                                          : DeviceNameFor(_requestingDeviceId));
+        }
         return Outcome::RequestStarted;
     }
 
+    _quiet = quiet;
     if (deviceId.isEmpty()) {
         EmitOutcome(Outcome::NoDevice, {});
         return Outcome::NoDevice;
@@ -299,7 +302,12 @@ Outcome Controller::Complete(Outcome outcome)
 
 void Controller::EmitOutcome(Outcome outcome, const QString &deviceName)
 {
-    emit OutcomeChanged(outcome, deviceName);
+    if (_quiet) {
+        emit QuietOutcomeChanged(outcome, deviceName);
+    }
+    else {
+        emit OutcomeChanged(outcome, deviceName);
+    }
 }
 
 } // namespace Core::QuickConnect

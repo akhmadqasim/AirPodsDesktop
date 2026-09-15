@@ -286,6 +286,18 @@ Você precisa emparelhar seus AirPods nas Configurações de Bluetooth do Window
         <translation>Movido para outro dispositivo</translation>
     </message>
     <message>
+        <source>When audio starts playing on this PC while an AirPod is in your ear, the AirPods switch over from the other device.</source>
+        <translation>Quando o áudio começa a tocar neste PC com um AirPod no ouvido, os AirPods trocam do outro dispositivo para cá.</translation>
+    </message>
+    <message>
+        <source>Connecting…</source>
+        <translation>Conectando…</translation>
+    </message>
+    <message>
+        <source>Could not connect</source>
+        <translation>Não foi possível conectar</translation>
+    </message>
+    <message>
         <source>Waiting for Binding</source>
         <translation>Aguardando vinculação</translation>
     </message>
@@ -378,6 +390,10 @@ Você precisa emparelhar seus AirPods nas Configurações de Bluetooth do Window
     <message>
         <source>Low audio latency</source>
         <translation>Baixa latência de áudio</translation>
+    </message>
+    <message>
+        <source>Automatic switching</source>
+        <translation>Troca automática</translation>
     </message>
     <message>
         <source>About</source>

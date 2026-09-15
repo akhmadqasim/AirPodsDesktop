@@ -38,9 +38,13 @@
 #include "Core/LowAudioLatency.h"
 #include "Core/QuickConnect.h"
 #include "Core/Aap.h"
+#include "Core/AudioActivity.h"
+#include "Core/AutoConnect.h"
+#include "Gui/LinkBanner.h"
 #if defined APD_OS_WIN
     #include "Core/QuickConnect_win.h"
     #include "Core/Aap_win.h"
+    #include "Core/AudioActivity_win.h"
 #endif
 #include "Core/Settings.h"
 #include "Core/Update.h"
@@ -213,6 +217,13 @@ bool ApdApplication::Prepare(int argc, char *argv[])
 #endif
     _aap = std::make_unique<Core::Aap::Client>(_aapBackend);
 
+#if defined APD_OS_WIN
+    _audioActivityBackend = std::make_shared<Core::AudioActivity::WindowsBackend>();
+#else
+    _audioActivityBackend = std::make_shared<Core::AudioActivity::NullBackend>();
+#endif
+    _audioActivity = std::make_unique<Core::AudioActivity::Monitor>(_audioActivityBackend);
+
     _trayIcon = std::make_unique<Gui::TrayIcon>(
         [this] { return GetCurrentLoadedLocaleIndex(); }, *_quickConnect, *_aap);
     _taskbarStatus = std::make_unique<Gui::TaskbarStatus>();
@@ -221,6 +232,10 @@ bool ApdApplication::Prepare(int argc, char *argv[])
     _lowAudioLatencyController = std::make_unique<Core::LowAudioLatency::Controller>();
     _autoStartService = Core::AutoStart::CreateAutoStartService();
     _airPodsManager = std::make_unique<Core::AirPods::Manager>(this);
+    _autoConnect = std::make_unique<Core::AutoConnect::Coordinator>(
+        *_audioActivity, *_quickConnect,
+        [this] { return _airPodsManager->BoundDeviceContainerId(); });
+    _linkBanner = std::make_unique<Gui::LinkBanner>();
 
     qRegisterMetaType<Core::AirPods::State>("Core::AirPods::State");
 
@@ -296,9 +311,61 @@ void ApdApplication::ConnectAirPodsManager()
     connect(
         _aap.get(), &Core::Aap::Client::BatteryStatusChanged, manager,
         &Core::AirPods::Manager::OnAapBatteryStatusChanged, Qt::DirectConnection);
+    // Came here: the sheet says so. Left for another device: the banner at the top offers to
+    // bring them back.
     connect(
         manager, &Core::AirPods::Manager::DeviceLinkChanged, mainWindow,
-        &Gui::MainWindow::OnDeviceLinkChanged);
+        [this, mainWindow](bool connected) {
+            if (connected) {
+                _linkBanner->Dismiss();
+                mainWindow->OnDeviceLinkChanged(true);
+            }
+            else {
+                _linkBanner->ShowMovedAway();
+            }
+        });
+    connect(
+        manager, &Core::AirPods::Manager::StateUpdated, _linkBanner.get(),
+        &Gui::LinkBanner::UpdateState);
+    connect(_linkBanner.get(), &Gui::LinkBanner::ReturnRequested, this, [this] {
+        _linkBanner->ShowConnecting();
+        _quickConnect->RequestDevice(_airPodsManager->BoundDeviceContainerId(), true);
+    });
+    connect(
+        _quickConnect.get(), &Core::QuickConnect::Controller::QuietOutcomeChanged, this,
+        [this](Core::QuickConnect::Outcome outcome, const QString &) {
+            using Core::QuickConnect::Outcome;
+            switch (outcome) {
+            case Outcome::Connected:
+            case Outcome::AlreadyConnected:
+                _linkBanner->Dismiss();
+                break;
+            case Outcome::Failed:
+            case Outcome::TimedOut:
+            case Outcome::DeviceUnavailable:
+            case Outcome::NoDevice:
+                if (_linkBanner->isVisible()) {
+                    _linkBanner->ShowFailed();
+                }
+                break;
+            default:
+                break;
+            }
+        });
+
+    // Automatic switching: audio starting here with an AirPod in an ear pulls the pods over.
+    connect(
+        manager, &Core::AirPods::Manager::StateUpdated, _autoConnect.get(),
+        &Core::AutoConnect::Coordinator::OnStateUpdated);
+    connect(
+        manager, &Core::AirPods::Manager::Disconnected, _autoConnect.get(),
+        &Core::AutoConnect::Coordinator::OnStateLost);
+    connect(
+        manager, &Core::AirPods::Manager::DeviceConnectionChanged, _autoConnect.get(),
+        &Core::AutoConnect::Coordinator::OnDeviceConnectionChanged, Qt::QueuedConnection);
+    connect(
+        manager, &Core::AirPods::Manager::DeviceLinkChanged, _autoConnect.get(),
+        &Core::AutoConnect::Coordinator::OnDeviceLinkChanged, Qt::QueuedConnection);
     connect(manager, &Core::AirPods::Manager::LidToggled, mainWindow, [mainWindow](bool opened) {
         if (opened) {
             emit mainWindow->ShowSafely();
@@ -477,6 +544,11 @@ void ApdApplication::OnTrayIconBatteryChanged(Core::Settings::TrayIconBatteryBeh
 void ApdApplication::OnTrayQuickConnectEnabledChanged(bool enable)
 {
     _quickConnect->SetEnabled(enable);
+}
+
+void ApdApplication::OnAutoSwitchChanged(bool enable)
+{
+    _autoConnect->SetEnabled(enable);
 }
 
 void ApdApplication::OnTrayQuickConnectDeviceChanged(const QString &deviceId)

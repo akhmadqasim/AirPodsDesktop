@@ -82,6 +82,7 @@ private:
     // Features
     void On_cbLowAudioLatency_toggled(bool checked);
     void On_cbTrayQuickConnectEnabled_toggled(bool checked);
+    void On_cbAutoSwitch_toggled(bool checked);
     void On_cbTrayQuickConnectDevice_currentIndexChanged(int index);
     void On_cbAutoEarDetection_toggled(bool checked);
     void On_hsMaxReceivingRange_valueChanged(int value);
@@ -99,6 +100,7 @@ private:
         _ui.cbLowAudioLatency->setAccessibleName(_ui.lbLowAudioLatency->text());
         _ui.cbAutoEarDetection->setAccessibleName(_ui.lbAutoEarDetection->text());
         _ui.cbTrayQuickConnectEnabled->setAccessibleName(_ui.lbTrayQuickConnect->text());
+        _ui.cbAutoSwitch->setAccessibleName(_ui.lbAutoSwitch->text());
         _ui.cbAppearanceMode->setAccessibleName(_ui.lbAppearance->text());
         _aboutTextTemplate = _ui.label->text();
         InitCreditsText();

@@ -56,6 +56,7 @@ public:
         ++quickConnectDeviceChanges;
     }
     void OnTaskbarBatteryChanged(Core::Settings::TaskbarStatusBehavior) override {}
+    void OnAutoSwitchChanged(bool) override {}
 
     bool autoRun{false};
     int autoRunChanges{0};

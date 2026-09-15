@@ -335,6 +335,8 @@ set(
     "Source/Core/AirPods.cpp"
     "Source/Core/Aap.cpp"
     "Source/Core/QuickConnect.cpp"
+    "Source/Core/AudioActivity.cpp"
+    "Source/Core/AutoConnect.cpp"
     "Source/Core/Settings.cpp"
     "Source/Core/SettingsRepository.cpp"
     "Source/Core/LowAudioLatency.cpp"
@@ -354,6 +356,7 @@ set(
     "Source/Gui/TrayIcon.cpp"
     "Source/Gui/TaskbarStatus.cpp"
     "Source/Gui/MainWindow.cpp"
+    "Source/Gui/LinkBanner.cpp"
     "Source/Gui/SelectWindow.cpp"
     "Source/Gui/UpdateWindow.cpp"
     "Source/Gui/SettingsWindow.cpp"
@@ -374,6 +377,7 @@ set(ADD_EXECUTABLE_ARG)
 if (WIN32)
     list(APPEND APD_CORE_CODE_FILES
         "Source/Core/Aap_win.cpp"
+        "Source/Core/AudioActivity_win.cpp"
         "Source/Core/AutoStart_win.cpp"
         "Source/Core/Bluetooth_win.cpp"
         "Source/Core/GlobalMedia_win.cpp"

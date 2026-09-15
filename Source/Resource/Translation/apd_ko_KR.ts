@@ -286,6 +286,18 @@ Windows의 Bluetooth 설정에서 AirPods을 페어링해야 합니다.</transla
         <translation>다른 기기로 이동됨</translation>
     </message>
     <message>
+        <source>When audio starts playing on this PC while an AirPod is in your ear, the AirPods switch over from the other device.</source>
+        <translation>AirPod을 귀에 착용한 상태에서 이 PC에서 오디오가 재생되기 시작하면 AirPods가 다른 기기에서 전환됩니다.</translation>
+    </message>
+    <message>
+        <source>Connecting…</source>
+        <translation>연결 중…</translation>
+    </message>
+    <message>
+        <source>Could not connect</source>
+        <translation>연결할 수 없음</translation>
+    </message>
+    <message>
         <source>Waiting for Binding</source>
         <translation>연결 대기 중</translation>
     </message>
@@ -366,6 +378,10 @@ Windows의 Bluetooth 설정에서 AirPods을 페어링해야 합니다.</transla
     <message>
         <source>Low audio latency</source>
         <translation>오디오 지연 최소화</translation>
+    </message>
+    <message>
+        <source>Automatic switching</source>
+        <translation>자동 전환</translation>
     </message>
     <message>
         <source>About</source>

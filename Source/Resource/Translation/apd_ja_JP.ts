@@ -286,6 +286,18 @@ You need to pair your AirPods in Windows Bluetooth Settings first.</source>
         <translation>別のデバイスに移動しました</translation>
     </message>
     <message>
+        <source>When audio starts playing on this PC while an AirPod is in your ear, the AirPods switch over from the other device.</source>
+        <translation>AirPodを耳に装着した状態でこのPCでオーディオの再生が始まると、AirPodsが他のデバイスから切り替わります。</translation>
+    </message>
+    <message>
+        <source>Connecting…</source>
+        <translation>接続中…</translation>
+    </message>
+    <message>
+        <source>Could not connect</source>
+        <translation>接続できませんでした</translation>
+    </message>
+    <message>
         <source>Waiting for Binding</source>
         <translation>接続待機中</translation>
     </message>
@@ -366,6 +378,10 @@ You need to pair your AirPods in Windows Bluetooth Settings first.</source>
     <message>
         <source>Low audio latency</source>
         <translation>低遅延モード</translation>
+    </message>
+    <message>
+        <source>Automatic switching</source>
+        <translation>自動切り替え</translation>
     </message>
     <message>
         <source>About</source>

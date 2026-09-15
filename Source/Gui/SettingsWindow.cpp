@@ -104,6 +104,7 @@ SettingsWindow::SettingsWindow(
              std::pair{_ui.lbLowAudioLatency, _ui.cbLowAudioLatency},
              std::pair{_ui.lbAutoEarDetection, _ui.cbAutoEarDetection},
              std::pair{_ui.lbTrayQuickConnect, _ui.cbTrayQuickConnectEnabled},
+             std::pair{_ui.lbAutoSwitch, _ui.cbAutoSwitch},
          })
     {
         label->setBuddy(checkBox);
@@ -206,6 +207,12 @@ SettingsWindow::SettingsWindow(
     connect(_ui.cbTrayQuickConnectEnabled, &QCheckBox::toggled, this, [this](bool checked) {
         if (_trigger) {
             On_cbTrayQuickConnectEnabled_toggled(checked);
+        }
+    });
+
+    connect(_ui.cbAutoSwitch, &QCheckBox::toggled, this, [this](bool checked) {
+        if (_trigger) {
+            On_cbAutoSwitch_toggled(checked);
         }
     });
 
@@ -326,6 +333,7 @@ void SettingsWindow::UpdateDescriptions()
     _ui.lbDescLowAudioLatency->setText(constMetaFields.low_audio_latency.Description());
     _ui.lbDescAutoEarDetection->setText(constMetaFields.automatic_ear_detection.Description());
     _ui.lbDescTrayQuickConnect->setText(constMetaFields.tray_quick_connect_enabled.Description());
+    _ui.lbDescAutoSwitch->setText(constMetaFields.auto_switch.Description());
 
     // The About text carries a hard-coded link colour inside the (translated) HTML; swap it
     // for the theme accent so it stays readable in dark mode.
@@ -463,6 +471,7 @@ void SettingsWindow::UpdateQuickConnectDevices(const Fields &fields)
     _ui.cbTrayQuickConnectDevice->setCurrentIndex(selectedIndex);
 
     _ui.cbTrayQuickConnectEnabled->setChecked(fields.tray_quick_connect_enabled);
+    _ui.cbAutoSwitch->setChecked(fields.auto_switch);
     // Always leave the checkbox usable: a transient empty enumeration must never trap the user in
     // a state they cannot turn off.
     _ui.cbTrayQuickConnectEnabled->setEnabled(true);
@@ -534,6 +543,11 @@ void SettingsWindow::On_cbAutoRun_toggled(bool checked)
 void SettingsWindow::On_cbTrayQuickConnectEnabled_toggled(bool checked)
 {
     ModifiableAccess()->tray_quick_connect_enabled = checked;
+}
+
+void SettingsWindow::On_cbAutoSwitch_toggled(bool checked)
+{
+    ModifiableAccess()->auto_switch = checked;
 }
 
 void SettingsWindow::On_cbTrayQuickConnectDevice_currentIndexChanged(int index)

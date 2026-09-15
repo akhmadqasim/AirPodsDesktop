@@ -286,6 +286,18 @@ You need to pair your AirPods in Windows Bluetooth Settings first.</source>
         <translation>已切換到其他裝置</translation>
     </message>
     <message>
+        <source>When audio starts playing on this PC while an AirPod is in your ear, the AirPods switch over from the other device.</source>
+        <translation>當 AirPod 戴在耳中且此電腦開始播放音訊時，AirPods 會從另一台裝置切換過來。</translation>
+    </message>
+    <message>
+        <source>Connecting…</source>
+        <translation>正在連接…</translation>
+    </message>
+    <message>
+        <source>Could not connect</source>
+        <translation>無法連接</translation>
+    </message>
+    <message>
         <source>Waiting for Binding</source>
         <translation>等待連線</translation>
     </message>
@@ -382,6 +394,10 @@ You need to pair your AirPods in Windows Bluetooth Settings first.</source>
     <message>
         <source>Low audio latency</source>
         <translation>低音訊延遲</translation>
+    </message>
+    <message>
+        <source>Automatic switching</source>
+        <translation>自動切換</translation>
     </message>
     <message>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open source &lt;a href=&quot;https://github.com/SpriteOvO/AirPodsDesktop&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;repository&lt;/span&gt;&lt;/a&gt; and licensed under &lt;a href=&quot;https://github.com/SpriteOvO/AirPodsDesktop/blob/main/LICENSE&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;GPLv3&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>

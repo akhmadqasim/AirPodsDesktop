@@ -30,12 +30,35 @@ PresentBattery(const Core::AirPods::Details::BasicState &state, BatteryBadge bad
     };
 }
 
+QString NoticeText(ConnectionNotice notice)
+{
+    switch (notice) {
+    case ConnectionNotice::ConnectedHere:
+        return QObject::tr("Connected to this PC");
+    case ConnectionNotice::MovedAway:
+        return QObject::tr("Moved to another device");
+    default:
+        return {};
+    }
+}
+
 } // namespace
 
 void MainWindowViewModel::UpdateState(const Core::AirPods::State &state)
 {
     _status = Status::Updating;
     _state = state;
+    _lastKnownState = state;
+}
+
+void MainWindowViewModel::SetConnectionNotice(ConnectionNotice notice)
+{
+    _notice = notice;
+}
+
+ConnectionNotice MainWindowViewModel::GetConnectionNotice() const
+{
+    return _notice;
 }
 
 void MainWindowViewModel::SetPodsOnly(bool podsOnly)
@@ -100,8 +123,17 @@ MainWindowPresentation MainWindowViewModel::Present() const
     if (_status == Status::Unbind) {
         result.buttonAction = ButtonAction::Bind;
     }
+    result.subtitle = NoticeText(_notice);
 
     if (!_state.has_value()) {
+        // "Moved to another device" arrives right as the state is dropped: keep showing which
+        // pods left, just without stale battery figures.
+        if (_notice != ConnectionNotice::None && _lastKnownState.has_value() &&
+            _status != Status::Unbind)
+        {
+            result.title = _lastKnownState->displayName;
+            result.animationModel = _lastKnownState->model;
+        }
         return result;
     }
 

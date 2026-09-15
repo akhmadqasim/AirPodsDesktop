@@ -20,6 +20,7 @@
 
 
 #include <atomic>
+#include <chrono>
 #include <map>
 #include <thread>
 
@@ -64,6 +65,9 @@ public:
     void Bind();
     void Unbind();
     void AskUserUpdate(const Core::Update::ReleaseInfo &releaseInfo);
+    // The pods came to this PC / left for another device: a short notice under the name, and
+    // the popup comes up for it if it is not already showing.
+    void OnDeviceLinkChanged(bool connected);
 
 Q_SIGNALS:
     void UpdateStateSafely(const Core::AirPods::State &state);
@@ -83,6 +87,7 @@ private:
     constexpr static qreal _windowCornerRadius = 32.0;
     constexpr static int _deviceLabelMaximumPointSize = 18;
     constexpr static int _deviceLabelMinimumPointSize = 12;
+    constexpr static std::chrono::seconds _noticeDuration{4};
 
     Ui::MainWindow _ui;
 
@@ -111,6 +116,8 @@ private:
     QTimer *_autoHideTimer = new QTimer{this};
     // Caps how long an opened lid may keep the popup up, in case the state stops updating.
     QTimer *_lidSafetyTimer = new QTimer{this};
+    // Clears the connection notice (and, when the popup came up only for it, the popup).
+    QTimer *_noticeTimer = new QTimer{this};
     CloseButton *_closeButton;
     Widget::Battery *_leftBattery = new Widget::Battery{this};
     Widget::Battery *_rightBattery = new Widget::Battery{this};

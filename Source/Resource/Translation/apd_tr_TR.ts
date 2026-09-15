@@ -278,6 +278,14 @@ You need to pair your AirPods in Windows Bluetooth Settings first.</source>
         <translation>Bağlantı Kesildi</translation>
     </message>
     <message>
+        <source>Connected to this PC</source>
+        <translation>Bu bilgisayara bağlandı</translation>
+    </message>
+    <message>
+        <source>Moved to another device</source>
+        <translation>Başka bir cihaza geçti</translation>
+    </message>
+    <message>
         <source>Waiting for Binding</source>
         <translation>Eşleştirme Bekleniyor</translation>
     </message>

@@ -195,6 +195,18 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
     _lidSafetyTimer->setObjectName("lidSafetyTimer");
     _lidSafetyTimer->setSingleShot(true);
     _lidSafetyTimer->callOnTimeout([this] { DoHide(); });
+    _noticeTimer->setObjectName("noticeTimer");
+    _noticeTimer->setSingleShot(true);
+    _noticeTimer->callOnTimeout([this] {
+        _viewModel.SetConnectionNotice(ConnectionNotice::None);
+        Repaint();
+    });
+    {
+        auto font = _ui.subtitleLabel->font();
+        font.setPointSize(9);
+        _ui.subtitleLabel->setFont(font);
+        _ui.subtitleLabel->hide();
+    }
     _podsRowGeometry = _ui.podsBatteryContainer->geometry();
     _sceneFade.setDuration(500);
     _sceneFade.setEasingCurve(QEasingCurve::InOutSine);
@@ -331,6 +343,23 @@ void MainWindow::Disconnect()
     Repaint();
     _holdForOpenLid = false;
     ControlAutoHideTimer(_isVisible);
+}
+
+void MainWindow::OnDeviceLinkChanged(bool connected)
+{
+    LOG(Info, "MainWindow::OnDeviceLinkChanged: {}", connected);
+
+    _viewModel.SetConnectionNotice(
+        connected ? ConnectionNotice::ConnectedHere : ConnectionNotice::MovedAway);
+    Repaint();
+    _noticeTimer->start(_noticeDuration);
+    if (_viewModel.GetConnectionNotice() != ConnectionNotice::None) {
+        Show();
+        if (!_holdForOpenLid) {
+            // Like the banner on iPhone: it is gone again after a few seconds.
+            _autoHideTimer->start(_noticeDuration);
+        }
+    }
 }
 
 void MainWindow::Bind()
@@ -678,6 +707,8 @@ void MainWindow::Repaint()
     }
 
     FitDeviceLabelFont(presentation.title);
+    _ui.subtitleLabel->setText(presentation.subtitle);
+    _ui.subtitleLabel->setVisible(!presentation.subtitle.isEmpty());
     ChangeButtonAction(presentation.buttonAction);
     SetAnimation(presentation.animationModel);
     ApplyScene(presentation.scene);
@@ -751,6 +782,7 @@ void MainWindow::ApplyTheme()
 
     Utils::Qt::SetPaletteColor(this, QPalette::Window, colors.mainSurface);
     Utils::Qt::SetPaletteColor(_ui.deviceLabel, QPalette::WindowText, colors.mainText);
+    Utils::Qt::SetPaletteColor(_ui.subtitleLabel, QPalette::WindowText, colors.mainTextSecondary);
 
     for (auto *battery : {_leftBattery, _rightBattery, _caseBattery}) {
         battery->setNormalColor(colors.batteryNormal);

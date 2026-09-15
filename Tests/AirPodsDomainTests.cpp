@@ -244,6 +244,7 @@ private Q_SLOTS:
     void PresentsMainWindowCaseBattery();
     void MergesMatchingPodBatteries();
     void PresentsScenesFromPodPlacement();
+    void PresentsConnectionNotice();
     void MapsMainWindowAnimationResources();
     void ConvertsTaskbarGeometryAcrossDpiBoundaries();
 };
@@ -1143,6 +1144,39 @@ void AirPodsDomainTests::PresentsMainWindowCaseBattery()
 
     QVERIFY(presentation.caseBattery.visible);
     QVERIFY(!presentation.caseBattery.charging);
+}
+
+void AirPodsDomainTests::PresentsConnectionNotice()
+{
+    Core::AirPods::State state;
+    state.model = Core::AirPods::Model::AirPods_Pro_2;
+    state.displayName = "Office AirPods";
+    state.pods.left.battery = 80;
+
+    Gui::MainWindowViewModel viewModel;
+    viewModel.UpdateState(state);
+    QVERIFY(viewModel.Present().subtitle.isEmpty());
+
+    viewModel.SetConnectionNotice(Gui::ConnectionNotice::ConnectedHere);
+    auto presentation = viewModel.Present();
+    QCOMPARE(presentation.subtitle, QString{"Connected to this PC"});
+    QCOMPARE(presentation.title, QString{"Office AirPods"});
+    QVERIFY(presentation.leftBattery.visible);
+
+    // The link is gone and the state with it: the notice still names the pods that left,
+    // without stale battery figures.
+    viewModel.Disconnect();
+    viewModel.SetConnectionNotice(Gui::ConnectionNotice::MovedAway);
+    presentation = viewModel.Present();
+    QCOMPARE(presentation.subtitle, QString{"Moved to another device"});
+    QCOMPARE(presentation.title, QString{"Office AirPods"});
+    QVERIFY(presentation.animationModel == Core::AirPods::Model::AirPods_Pro_2);
+    QVERIFY(!presentation.leftBattery.visible);
+
+    viewModel.SetConnectionNotice(Gui::ConnectionNotice::None);
+    presentation = viewModel.Present();
+    QVERIFY(presentation.subtitle.isEmpty());
+    QCOMPARE(presentation.title, QString{"Disconnected"});
 }
 
 void AirPodsDomainTests::MapsMainWindowAnimationResources()

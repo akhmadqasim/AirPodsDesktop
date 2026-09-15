@@ -45,6 +45,12 @@ enum class Scene : uint32_t {
     PodsOnly,
 };
 
+enum class ConnectionNotice : uint32_t {
+    None,
+    ConnectedHere, // the pods just came to this PC
+    MovedAway,     // the pods just left for another device
+};
+
 struct BatteryPresentation {
     bool visible{false};
     bool charging{false};
@@ -56,6 +62,7 @@ struct BatteryPresentation {
 
 struct MainWindowPresentation {
     QString title;
+    QString subtitle; // empty unless a connection notice is showing
     ButtonAction buttonAction{ButtonAction::NoButton};
     std::optional<Core::AirPods::Model> animationModel;
     Scene scene{Scene::PodsInCase};
@@ -81,6 +88,10 @@ public:
     // The window decides when "both out" has lasted long enough to drop the case.
     void SetPodsOnly(bool podsOnly);
     bool IsPodsOnly() const;
+    // Shown under the name for a few seconds; the last known device stands in for the picture
+    // and name while the link is gone.
+    void SetConnectionNotice(ConnectionNotice notice);
+    ConnectionNotice GetConnectionNotice() const;
     void Available();
     void Unavailable();
     void Disconnect();
@@ -92,7 +103,9 @@ public:
 private:
     Status _status{Status::Unavailable};
     std::optional<Core::AirPods::State> _state;
+    std::optional<Core::AirPods::State> _lastKnownState;
     bool _podsOnly{false};
+    ConnectionNotice _notice{ConnectionNotice::None};
 };
 
 AnimationPresentation GetAnimationPresentation(Core::AirPods::Model model);

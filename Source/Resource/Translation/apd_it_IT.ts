@@ -279,6 +279,14 @@ Devi prima abbinare le tue AirPods nelle impostazioni Bluetooth di Windows.</tra
         <translation>Disconnesso</translation>
     </message>
     <message>
+        <source>Connected to this PC</source>
+        <translation>Connesso a questo PC</translation>
+    </message>
+    <message>
+        <source>Moved to another device</source>
+        <translation>Passato a un altro dispositivo</translation>
+    </message>
+    <message>
         <source>Waiting for Binding</source>
         <translation>In attessa dell&apos;abbinamento</translation>
     </message>

@@ -296,6 +296,9 @@ void ApdApplication::ConnectAirPodsManager()
     connect(
         _aap.get(), &Core::Aap::Client::BatteryStatusChanged, manager,
         &Core::AirPods::Manager::OnAapBatteryStatusChanged, Qt::DirectConnection);
+    connect(
+        manager, &Core::AirPods::Manager::DeviceLinkChanged, mainWindow,
+        &Gui::MainWindow::OnDeviceLinkChanged);
     connect(manager, &Core::AirPods::Manager::LidToggled, mainWindow, [mainWindow](bool opened) {
         if (opened) {
             emit mainWindow->ShowSafely();

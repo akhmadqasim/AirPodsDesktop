@@ -278,6 +278,14 @@ Windows의 Bluetooth 설정에서 AirPods을 페어링해야 합니다.</transla
         <translation>연결되지 않음</translation>
     </message>
     <message>
+        <source>Connected to this PC</source>
+        <translation>이 PC에 연결됨</translation>
+    </message>
+    <message>
+        <source>Moved to another device</source>
+        <translation>다른 기기로 이동됨</translation>
+    </message>
+    <message>
         <source>Waiting for Binding</source>
         <translation>연결 대기 중</translation>
     </message>

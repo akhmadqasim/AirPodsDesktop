@@ -278,6 +278,14 @@ You need to pair your AirPods in Windows Bluetooth Settings first.</source>
         <translation>连接已断开</translation>
     </message>
     <message>
+        <source>Connected to this PC</source>
+        <translation>已连接到此电脑</translation>
+    </message>
+    <message>
+        <source>Moved to another device</source>
+        <translation>已切换到其他设备</translation>
+    </message>
+    <message>
         <source>Waiting for Binding</source>
         <translation>等待绑定</translation>
     </message>

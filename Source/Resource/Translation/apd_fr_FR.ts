@@ -278,6 +278,14 @@ Vous devez d&apos;abord appairer vos AirPods dans les paramètres Bluetooth de W
         <translation>Déconnecté</translation>
     </message>
     <message>
+        <source>Connected to this PC</source>
+        <translation>Connecté à ce PC</translation>
+    </message>
+    <message>
+        <source>Moved to another device</source>
+        <translation>Passé à un autre appareil</translation>
+    </message>
+    <message>
         <source>Waiting for Binding</source>
         <translation>En attente de connexion</translation>
     </message>

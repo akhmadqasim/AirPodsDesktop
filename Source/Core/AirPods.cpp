@@ -309,16 +309,19 @@ void Manager::CompleteBoundDeviceLookup(uint64_t address, std::optional<Bluetoot
         OnBoundDeviceConnectionStateChanged(std::forward<decltype(args)>(args)...);
     };
 
-    OnBoundDeviceConnectionStateChanged(_boundDevice->GetConnectionState());
+    OnBoundDeviceConnectionStateChanged(_boundDevice->GetConnectionState(), true);
 }
 
-void Manager::OnBoundDeviceConnectionStateChanged(Bluetooth::DeviceState state)
+void Manager::OnBoundDeviceConnectionStateChanged(Bluetooth::DeviceState state, bool initial)
 {
     const bool oldDeviceConnected = _deviceConnected;
     bool newDeviceConnected = state == Bluetooth::DeviceState::Connected;
     bool doDisconnect = oldDeviceConnected && !newDeviceConnected;
     _deviceConnected = newDeviceConnected;
     emit DeviceConnectionChanged(newDeviceConnected);
+    if (!initial && oldDeviceConnected != newDeviceConnected) {
+        emit DeviceLinkChanged(newDeviceConnected);
+    }
 
     // The scanner keeps running across link changes: with the pods on another device the popup
     // still shows their state and offers to connect. AAP (when up) stops it instead.

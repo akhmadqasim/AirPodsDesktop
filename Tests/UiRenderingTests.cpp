@@ -222,6 +222,42 @@ private Q_SLOTS:
         QVERIFY(!lidSafety->isActive());
     }
 
+    void MainWindowAnnouncesLinkChanges()
+    {
+        Gui::MainWindow window;
+        auto *autoHide = window.findChild<QTimer *>("autoHideTimer");
+        auto *notice = window.findChild<QTimer *>("noticeTimer");
+        auto *subtitle = window.findChild<QLabel *>("subtitleLabel");
+        QVERIFY(autoHide != nullptr);
+        QVERIFY(notice != nullptr);
+        QVERIFY(subtitle != nullptr);
+
+        Core::AirPods::State state;
+        state.model = Core::AirPods::Model::AirPods_Pro_2;
+        state.displayName = QStringLiteral("AirPods Pro");
+        state.pods.left.battery = Core::AirPods::Battery{90};
+        state.caseBox.isBothPodsInCase = true;
+        window.UpdateState(state);
+        QVERIFY(!subtitle->isVisible());
+
+        // The pods came over: the popup comes up on its own, for a few seconds.
+        window.OnDeviceLinkChanged(true);
+        QTRY_VERIFY(window.isVisible());
+        QVERIFY(subtitle->isVisible());
+        QCOMPARE(subtitle->text(), QString{"Connected to this PC"});
+        QVERIFY(notice->isActive());
+        QVERIFY(autoHide->isActive());
+        QVERIFY(autoHide->remainingTime() <= 4000);
+
+        // Gone again: the name stays even though the state is dropped.
+        window.Disconnect();
+        window.OnDeviceLinkChanged(false);
+        QCOMPARE(subtitle->text(), QString{"Moved to another device"});
+        auto *label = window.findChild<QLabel *>("deviceLabel");
+        QVERIFY(label != nullptr);
+        QCOMPARE(label->text(), state.displayName);
+    }
+
     void DeviceImageSlicesAndRearrangesPods()
     {
         const QImage source{":/Resource/Image/Animation/AirPods_Pro_2.png"};

@@ -278,6 +278,14 @@ Precisa primeiro de emparelhar os seus AirPods nas definições de Bluetooth do 
         <translation>Desconectado</translation>
     </message>
     <message>
+        <source>Connected to this PC</source>
+        <translation>Ligado a este PC</translation>
+    </message>
+    <message>
+        <source>Moved to another device</source>
+        <translation>Mudou para outro dispositivo</translation>
+    </message>
+    <message>
         <source>Waiting for Binding</source>
         <translation>À espera de ligação</translation>
     </message>

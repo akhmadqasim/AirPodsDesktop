@@ -278,6 +278,14 @@ Kopple deine AirPods zuerst in den Windows Bluetooth-Einstellungen.</translation
         <translation>Getrennt</translation>
     </message>
     <message>
+        <source>Connected to this PC</source>
+        <translation>Mit diesem PC verbunden</translation>
+    </message>
+    <message>
+        <source>Moved to another device</source>
+        <translation>Zu einem anderen Gerät gewechselt</translation>
+    </message>
+    <message>
         <source>Waiting for Binding</source>
         <translation>Warte auf Verbindung</translation>
     </message>

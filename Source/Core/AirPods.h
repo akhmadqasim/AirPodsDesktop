@@ -251,7 +251,7 @@ private:
     Bluetooth::AdvertisementWatcher _adWatcher;
 
     void CompleteBoundDeviceLookup(uint64_t address, std::optional<Bluetooth::Device> device);
-    void OnBoundDeviceConnectionStateChanged(Bluetooth::DeviceState state);
+    void OnBoundDeviceConnectionStateChanged(Bluetooth::DeviceState state, bool initial = false);
     void OnStateChanged(Details::StateManager::UpdateEvent updateEvent);
     void PublishAapState();
     void OnLidOpened(bool opened);
@@ -267,6 +267,9 @@ Q_SIGNALS:
     void LidToggled(bool opened);
     void ScannerAvailabilityChanged(bool available);
     void DeviceConnectionChanged(bool connected);
+    // A genuine change of the classic link after binding (not the state read at bind time):
+    // the pods came to this PC, or left for another device.
+    void DeviceLinkChanged(bool connected);
 };
 
 std::vector<Core::Bluetooth::Device> GetDevices();

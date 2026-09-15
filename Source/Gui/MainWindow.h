@@ -96,6 +96,9 @@ private:
     AnimationPlayback *_playback;
     Widget::DeviceImage *_deviceImage;
     bool _rotating{false};
+    // Media hand-over: the visible one fades out while it keeps playing, then the other fades in.
+    QVariantAnimation _mediaFade{this};
+    enum class MediaFadePhase { Idle, Out, In } _mediaFadePhase{MediaFadePhase::Idle};
     // Both pods out: the render keeps turning this long, then the case leaves the picture.
     QTimer *_podsOnlyTimer = new QTimer{this};
     QRect _podsRowGeometry;
@@ -125,6 +128,10 @@ private:
     void PlayAnimation();
     void StopAnimation();
     void SetRotating(bool rotating);
+    void ShowMedia(bool rotating);
+    void StartMediaFade(MediaFadePhase phase);
+    void SetMediaOpacity(bool rotatingView, qreal opacity);
+    qreal MediaOpacity(bool rotatingView) const;
     void ApplyScene(Scene scene);
     void BindDevice();
     void ShowDeviceSelector(std::vector<Core::Bluetooth::Device> devices);

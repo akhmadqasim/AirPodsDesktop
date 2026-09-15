@@ -171,6 +171,17 @@ QImage DeviceImage::CurrentComposition() const
     return _current;
 }
 
+void DeviceImage::SetOpacity(qreal opacity)
+{
+    _opacity = std::clamp(opacity, 0.0, 1.0);
+    update();
+}
+
+qreal DeviceImage::Opacity() const
+{
+    return _opacity;
+}
+
 void DeviceImage::Recompose(bool animate)
 {
     if (_source.isNull()) {
@@ -245,7 +256,7 @@ void DeviceImage::DrawFitted(
 
     const QSizeF logical = QSizeF{fitted} / dpr;
     const QPointF topLeft{(width() - logical.width()) / 2.0, (height() - logical.height()) / 2.0};
-    painter.setOpacity(opacity);
+    painter.setOpacity(opacity * _opacity);
     painter.drawImage(topLeft, scaledCache);
 }
 

@@ -196,6 +196,28 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
     _lidSafetyTimer->setSingleShot(true);
     _lidSafetyTimer->callOnTimeout([this] { DoHide(); });
     _podsRowGeometry = _ui.podsBatteryContainer->geometry();
+    _mediaFade.setDuration(500);
+    _mediaFade.setEasingCurve(QEasingCurve::InOutSine);
+    connect(&_mediaFade, &QVariantAnimation::valueChanged, this, [this](const QVariant &value) {
+        const qreal opacity = value.toReal();
+        if (_mediaFadePhase == MediaFadePhase::Out) {
+            SetMediaOpacity(!_rotating, opacity); // the outgoing view
+        }
+        else if (_mediaFadePhase == MediaFadePhase::In) {
+            SetMediaOpacity(_rotating, opacity); // the incoming view
+        }
+    });
+    connect(&_mediaFade, &QVariantAnimation::finished, this, [this] {
+        if (_mediaFadePhase == MediaFadePhase::Out) {
+            // The old one is gone; bring the other in from transparent.
+            ShowMedia(_rotating);
+            SetMediaOpacity(_rotating, 0.0);
+            StartMediaFade(MediaFadePhase::In);
+        }
+        else {
+            _mediaFadePhase = MediaFadePhase::Idle;
+        }
+    });
     _podsOnlyTimer->setObjectName("podsOnlyTimer");
     _podsOnlyTimer->setSingleShot(true);
     _podsOnlyTimer->callOnTimeout([this] {
@@ -395,7 +417,16 @@ void MainWindow::SetAnimation(std::optional<Core::AirPods::Model> model)
 
 void MainWindow::PlayAnimation()
 {
-    if (_rotating) {
+    _mediaFade.stop();
+    _mediaFadePhase = MediaFadePhase::Idle;
+    _animationView->SetOpacity(1.0);
+    _deviceImage->SetOpacity(1.0);
+    ShowMedia(_rotating);
+}
+
+void MainWindow::ShowMedia(bool rotating)
+{
+    if (rotating) {
         _deviceImage->hide();
         _animationView->show();
         _playback->SetActive(true);
@@ -405,6 +436,34 @@ void MainWindow::PlayAnimation()
         _animationView->hide();
         _deviceImage->show();
     }
+}
+
+void MainWindow::SetMediaOpacity(bool rotatingView, qreal opacity)
+{
+    if (rotatingView) {
+        _animationView->SetOpacity(opacity);
+    }
+    else {
+        _deviceImage->SetOpacity(opacity);
+    }
+}
+
+qreal MainWindow::MediaOpacity(bool rotatingView) const
+{
+    return rotatingView ? _animationView->Opacity() : _deviceImage->Opacity();
+}
+
+void MainWindow::StartMediaFade(MediaFadePhase phase)
+{
+    _mediaFade.stop();
+    _mediaFadePhase = phase;
+    // Pick up from wherever the view currently is, so a reversed hand-over never jumps.
+    const bool outgoing = phase == MediaFadePhase::Out;
+    const qreal from = MediaOpacity(outgoing ? !_rotating : _rotating);
+    _mediaFade.setStartValue(from);
+    _mediaFade.setEndValue(outgoing ? 0.0 : 1.0);
+    _mediaFade.setDuration(qRound(500 * (outgoing ? from : 1.0 - from)) + 1);
+    _mediaFade.start();
 }
 
 void MainWindow::StopAnimation()
@@ -460,17 +519,20 @@ void MainWindow::SetRotating(bool rotating)
         return;
     }
 
-    if (rotating) {
-        PlayAnimation();
+    // Whatever is on screen keeps doing its thing (the video keeps turning) while it fades
+    // out; only then does the other view fade in. A hand-over caught mid-fade restarts from
+    // wherever the previous one got to.
+    if (_mediaFadePhase == MediaFadePhase::In) {
+        // The outgoing view is already gone; fade the half-shown one back out.
+        StartMediaFade(MediaFadePhase::Out);
         return;
     }
-
-    // Freeze into the still render: the last frame melts into the poster.
-    const auto lastFrame = _animationView->LastFrame();
-    _playback->SetActive(false);
-    _animationView->hide();
-    _deviceImage->show();
-    _deviceImage->CrossFadeFrom(lastFrame);
+    if (_mediaFadePhase == MediaFadePhase::Out) {
+        // Target flipped back to what is currently fading out: just fade it in again.
+        StartMediaFade(MediaFadePhase::In);
+        return;
+    }
+    StartMediaFade(MediaFadePhase::Out);
 }
 
 void MainWindow::BindDevice()

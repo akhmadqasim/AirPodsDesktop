@@ -73,6 +73,10 @@ public:
     // The composition currently shown (for tests); null while no source is set.
     QImage CurrentComposition() const;
 
+    // Whole-view opacity, on top of any running composition fade.
+    void SetOpacity(qreal opacity);
+    qreal Opacity() const;
+
 Q_SIGNALS:
     void Clicked();
 
@@ -96,6 +100,7 @@ private:
     mutable QImage _currentScaled;
     mutable QImage _previousScaled;
     QVariantAnimation _fade{this};
+    qreal _opacity{1.0};
 
     void Recompose(bool animate);
     QImage Compose(Arrangement arrangement) const;

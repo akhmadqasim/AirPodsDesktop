@@ -135,6 +135,11 @@ bool AirPods::IsLidOpened() const
     return lid.closed == 0;
 }
 
+bool AirPods::IsLinked() const
+{
+    return connectionState != 0x00;
+}
+
 bool AirPods::IsCaseCharging() const
 {
     return battery.caseCharging;

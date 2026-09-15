@@ -80,6 +80,9 @@ struct State {
     // Whether the classic Bluetooth link to this PC is up. BLE advertisements arrive either way,
     // so the popup can offer to connect while the pods are on another device.
     bool isConnected{false};
+    // What the advertisement says about a classic link to *any* device (unknown for a state
+    // built over AAP, where the link is by definition ours).
+    std::optional<bool> isLinked;
 
     bool operator==(const State &rhs) const = default;
 };

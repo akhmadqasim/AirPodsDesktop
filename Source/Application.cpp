@@ -308,7 +308,7 @@ void ApdApplication::ConnectAirPodsManager()
                 mainWindow->OnDeviceLinkChanged(true);
             }
             else {
-                _linkBanner->ShowMovedAway();
+                _linkBanner->ArmMovedAway();
             }
         });
     connect(

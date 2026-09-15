@@ -41,6 +41,11 @@ public:
     explicit LinkBanner(QWidget *parent = nullptr);
 
     void UpdateState(const Core::AirPods::State &state);
+    // The link to this PC dropped: show "moved" once the next advertisement says the pods hold a
+    // link to someone else and are not sitting in the case. Nothing within a few seconds (pods
+    // switched off, out of range) means nothing to announce.
+    void ArmMovedAway();
+    bool IsArmed() const;
     void ShowMovedAway();
     void ShowConnecting();
     void ShowFailed();
@@ -71,6 +76,7 @@ private:
     std::optional<Core::AirPods::Model> _glyphModel;
     QPropertyAnimation _slide{this, "pos"};
     QTimer *_dismissTimer = new QTimer{this};
+    QTimer *_armTimer = new QTimer{this};
     bool _shown{false};
 
     void Present(const QString &text, bool withButton, std::optional<std::chrono::milliseconds> stay);

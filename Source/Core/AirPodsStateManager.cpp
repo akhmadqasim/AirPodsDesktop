@@ -258,6 +258,7 @@ auto StateManager::UpdateState() -> std::optional<UpdateEvent>
     newState.pods.left = std::move(PICK_SIDE(pods.left.battery.Available()).pods.left);
     newState.pods.right = std::move(PICK_SIDE(pods.right.battery.Available()).pods.right);
     newState.caseBox = std::move(PICK_SIDE(caseBox.battery.Available()).caseBox);
+    newState.isLinked = PICK_SIDE(model != Model::Unknown).isLinked;
 
 #undef PICK_SIDE
 

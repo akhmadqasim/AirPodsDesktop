@@ -56,6 +56,8 @@ LinkBanner::LinkBanner(QWidget *parent) : QWidget{parent}
     _dismissTimer->setObjectName("bannerDismissTimer");
     _dismissTimer->setSingleShot(true);
     connect(_dismissTimer, &QTimer::timeout, this, &LinkBanner::Dismiss);
+    _armTimer->setObjectName("bannerArmTimer");
+    _armTimer->setSingleShot(true);
 
     _slide.setDuration(350);
     connect(&_slide, &QPropertyAnimation::finished, this, [this] {
@@ -70,6 +72,27 @@ void LinkBanner::UpdateState(const Core::AirPods::State &state)
     if (_glyphModel != state.model) {
         LoadGlyph(state.model);
     }
+    if (!IsArmed() || state.isConnected || !state.isLinked.has_value()) {
+        return;
+    }
+    if (state.caseBox.isBothPodsInCase) {
+        _armTimer->stop(); // just put away, not moved
+        return;
+    }
+    if (*state.isLinked) {
+        _armTimer->stop();
+        ShowMovedAway();
+    }
+}
+
+void LinkBanner::ArmMovedAway()
+{
+    _armTimer->start(8s);
+}
+
+bool LinkBanner::IsArmed() const
+{
+    return _armTimer->isActive();
 }
 
 void LinkBanner::LoadGlyph(Core::AirPods::Model model)

@@ -119,6 +119,8 @@ public:
 
     bool IsBothPodsInCase() const;
     bool IsLidOpened() const;
+    // Whether the pods hold a classic link to some device right now.
+    bool IsLinked() const;
 
     bool IsLeftInEar() const;
     bool IsRightInEar() const;
@@ -154,7 +156,9 @@ private:
         uint8_t unk10 : 4;
     } lid;
     Color color; // Untested because I don't have a device other than white
-    uint8_t unk11[1];
+    // Classic link the pods currently hold: 0x00 none, 0x04 idle, 0x05 music, 0x06 call,
+    // 0x07 ringing, 0x09 hanging up (per the LibrePods write-up).
+    uint8_t connectionState;
     uint8_t unk12[16]; // Hash or encrypted payload
 };
 static_assert(sizeof(AirPods) == 27);

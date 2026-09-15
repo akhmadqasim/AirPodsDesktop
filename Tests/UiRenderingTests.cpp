@@ -269,8 +269,23 @@ private Q_SLOTS:
         Core::AirPods::State state;
         state.model = Core::AirPods::Model::AirPods_Pro_2;
         banner.UpdateState(state);
-        banner.ShowMovedAway();
+
+        // Armed by a link drop; only an advertisement showing a link elsewhere brings it up.
+        banner.ArmMovedAway();
+        QVERIFY(banner.IsArmed());
+        state.isLinked = false;
+        banner.UpdateState(state);
+        QVERIFY(!banner.isVisible());
+        state.isLinked = true;
+        state.caseBox.isBothPodsInCase = true;
+        banner.UpdateState(state);
+        QVERIFY(!banner.isVisible());
+        QVERIFY(!banner.IsArmed()); // put away: nothing to announce
+        banner.ArmMovedAway();
+        state.caseBox.isBothPodsInCase = false;
+        banner.UpdateState(state);
         QTRY_VERIFY(banner.isVisible());
+        QVERIFY(!banner.IsArmed());
         QCOMPARE(banner.Text(), QString{"Moved to another device"});
         QVERIFY(banner.IsButtonShown());
         QVERIFY(dismiss->isActive());

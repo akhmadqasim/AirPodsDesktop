@@ -41,6 +41,8 @@ public:
     void SetSnapshotOpacity(qreal opacity);
     // 1 = new content hidden behind the cover; 0 = new content fully visible.
     void SetCoverOpacity(qreal opacity);
+    // Forget the "before" look while keeping the cover up (between the two halves of a fade).
+    void DropSnapshot();
     void Finish();
     bool IsRunning() const;
 

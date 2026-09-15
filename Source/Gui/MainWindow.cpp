@@ -202,18 +202,23 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
         const qreal opacity = value.toReal();
         if (_fadePhase == FadePhase::Out) {
             if (_fadeMedia) {
-                SetMediaOpacity(!_rotating, opacity); // the outgoing view, still playing
+                SetMediaOpacity(_shownView, opacity); // the outgoing view, still playing
             }
             if (_fadeBatteries) {
-                _batteryFade->SetSnapshotOpacity(opacity);
+                // The snapshot is what was on screen when this phase began; it leaves in step
+                // with the picture, however far along the picture already was.
+                _batteryFade->SetSnapshotOpacity(_fadeFrom > 0.0 ? opacity / _fadeFrom : 0.0);
             }
         }
         else if (_fadePhase == FadePhase::In) {
             if (_fadeMedia) {
-                SetMediaOpacity(_rotating, opacity); // the incoming view
+                SetMediaOpacity(_shownView, opacity); // the incoming view
             }
             if (_fadeBatteries) {
-                _batteryFade->SetCoverOpacity(1.0 - opacity);
+                const qreal remaining =
+                    _fadeFrom < 1.0 ? (1.0 - opacity) / (1.0 - _fadeFrom) : 0.0;
+                _batteryFade->SetCoverOpacity(remaining);
+                _batteryFade->SetSnapshotOpacity(remaining); // only set when a fade-in was resumed
             }
         }
     });
@@ -223,7 +228,10 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
             if (_fadeMedia) {
                 _deviceImage->SetArrangement(_pendingArrangement, false);
                 ShowMedia(_rotating);
-                SetMediaOpacity(_rotating, 0.0);
+                SetMediaOpacity(_shownView, 0.0);
+            }
+            if (_fadeBatteries) {
+                _batteryFade->DropSnapshot();
             }
             StartSceneFade(FadePhase::In);
         }
@@ -446,6 +454,7 @@ void MainWindow::PlayAnimation()
 
 void MainWindow::ShowMedia(bool rotating)
 {
+    _shownView = rotating;
     if (rotating) {
         _deviceImage->hide();
         _animationView->show();
@@ -475,12 +484,15 @@ qreal MainWindow::MediaOpacity(bool rotatingView) const
 
 void MainWindow::StartSceneFade(FadePhase phase)
 {
-    _sceneFade.stop();
     _fadePhase = phase;
     // Pick up from wherever the picture currently is, so a reversed hand-over never jumps.
     const bool outgoing = phase == FadePhase::Out;
-    const qreal from = _fadeMedia ? MediaOpacity(outgoing ? !_rotating : _rotating)
-                                  : (outgoing ? 1.0 : 0.0);
+    const bool resumed = _sceneFade.state() == QAbstractAnimation::Running;
+    _sceneFade.stop();
+    const qreal from = _fadeMedia ? MediaOpacity(_shownView)
+                       : resumed ? _sceneFade.currentValue().toReal()
+                                 : (outgoing ? 1.0 : 0.0);
+    _fadeFrom = from;
     _sceneFade.setStartValue(from);
     _sceneFade.setEndValue(outgoing ? 0.0 : 1.0);
     _sceneFade.setDuration(qRound(500 * (outgoing ? from : 1.0 - from)) + 1);
@@ -658,8 +670,10 @@ void MainWindow::Repaint()
         _podsRowGeometry.x(), _podsRowGeometry.y(), width() - 2 * _podsRowGeometry.x(),
         _podsRowGeometry.height()};
     QPixmap before;
-    if (batteriesChanged && _isVisible && _lastPresentation.has_value()) {
-        _batteryFade->hide();
+    if (_isVisible && _lastPresentation.has_value() &&
+        (batteriesChanged || _batteryFade->IsRunning())) {
+        // Taken with any running overlay still in place: the fade resumes from exactly what
+        // is on screen right now.
         before = grab(batteryRow);
     }
 
@@ -715,22 +729,17 @@ void MainWindow::Repaint()
         StartSceneFade(FadePhase::Out);
         break;
     case FadePhase::In:
-        // The half-arrived scene goes back out (the picture from its current opacity).
-        if (_fadeBatteries) {
-            _batteryFade->SetCoverOpacity(1.0);
-        }
+        // The half-arrived scene goes back out, from wherever it is now.
         StartSceneFade(FadePhase::Out);
         break;
     case FadePhase::Out:
-        if (_fadeMedia && !mediaChanged) {
-            // Only the rings changed again: keep the fade-out going.
-            break;
-        }
-        if (_fadeMedia && wasRotating != _rotating && MediaOpacity(_rotating) > 0.0) {
-            // Target flipped back to the view that is currently fading out: fade it in again.
+        if (_fadeMedia && _shownView == _rotating &&
+            (_rotating || _deviceImage->GetArrangement() == _pendingArrangement)) {
+            // Target flipped back to what is currently fading out: fade it in again.
             StartSceneFade(FadePhase::In);
             break;
         }
+        // Restart the fade-out from the current opacity so a fresh snapshot leaves in step.
         StartSceneFade(FadePhase::Out);
         break;
     }

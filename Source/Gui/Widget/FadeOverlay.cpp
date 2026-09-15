@@ -55,6 +55,13 @@ void FadeOverlay::SetCoverOpacity(qreal opacity)
     update();
 }
 
+void FadeOverlay::DropSnapshot()
+{
+    _snapshot = {};
+    _snapshotOpacity = 0.0;
+    update();
+}
+
 void FadeOverlay::Finish()
 {
     _running = false;

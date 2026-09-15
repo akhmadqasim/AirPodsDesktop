@@ -97,11 +97,13 @@ private:
     Widget::AnimationView *_animationView;
     AnimationPlayback *_playback;
     Widget::DeviceImage *_deviceImage;
-    bool _rotating{false};
+    bool _rotating{false};  // what the scene asks for
+    bool _shownView{false}; // which view is on screen right now (may lag during a fade)
     QVariantAnimation _sceneFade{this};
     enum class FadePhase { Idle, Out, In } _fadePhase{FadePhase::Idle};
     bool _fadeMedia{false};     // the picture takes part in the running fade
     bool _fadeBatteries{false}; // the battery row takes part in the running fade
+    qreal _fadeFrom{1.0};       // opacity the running phase started from (a resumed fade)
     Widget::DeviceImage::Arrangement _pendingArrangement{Widget::DeviceImage::Arrangement::Spread};
     // Both pods out: the render keeps turning this long, then the case leaves the picture.
     QTimer *_podsOnlyTimer = new QTimer{this};

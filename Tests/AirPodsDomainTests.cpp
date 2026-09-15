@@ -1076,10 +1076,22 @@ void AirPodsDomainTests::PresentsScenesFromPodPlacement()
 
     Gui::MainWindowViewModel viewModel;
 
-    // One pod out: still render, both rings labelled, case ring labelled.
-    state.pods.left.isInCase = true;
+    // Both in the case: one ring for the pair even though the levels differ.
+    state.pods.left.isInCase = state.pods.right.isInCase = true;
+    state.caseBox.isBothPodsInCase = true;
     viewModel.UpdateState(state);
     auto presentation = viewModel.Present();
+    QCOMPARE(presentation.scene, Gui::Scene::PodsInCase);
+    QVERIFY(!presentation.leftBattery.visible);
+    QCOMPARE(presentation.rightBattery.value, 60U);
+    QCOMPARE(presentation.rightBattery.badge, Gui::BatteryBadge::None);
+    QCOMPARE(presentation.caseBattery.badge, Gui::BatteryBadge::None);
+
+    // One pod out: still render, both rings labelled, case ring labelled.
+    state.pods.right.isInCase = false;
+    state.caseBox.isBothPodsInCase = false;
+    viewModel.UpdateState(state);
+    presentation = viewModel.Present();
     QCOMPARE(presentation.scene, Gui::Scene::OnePodOut);
     QVERIFY(presentation.leftBattery.visible && presentation.rightBattery.visible);
     QCOMPARE(presentation.caseBattery.badge, Gui::BatteryBadge::Case);

@@ -123,34 +123,31 @@ MainWindowPresentation MainWindowViewModel::Present() const
     result.rightBattery = PresentBattery(_state->pods.right, BatteryBadge::Right);
     result.caseBattery = PresentBattery(_state->caseBox, BatteryBadge::Case);
 
-    // iOS collapses the pods into one unlabelled ring while they report the same thing, and
-    // drops the case glyph too once both pods sit in the case (nothing left to tell apart).
+    // One unlabelled ring for the pair (the weaker pod, charging only if both are) while the
+    // pods rest in the case or stand on their own; also whenever both simply report the same.
     const bool matchingPods = result.leftBattery.visible && result.rightBattery.visible &&
                               result.leftBattery.value == result.rightBattery.value &&
                               result.leftBattery.charging == result.rightBattery.charging;
-    if (matchingPods) {
-        result.leftBattery = {};
-        result.rightBattery.badge = BatteryBadge::None;
-    }
-    if (_state->caseBox.isBothPodsInCase) {
-        result.caseBattery.badge = BatteryBadge::None;
-    }
-
-    // Pods on their own: one ring for the pair (the weaker one), no case.
-    if (result.scene == Scene::PodsOnly) {
+    const bool mergePods =
+        result.scene == Scene::PodsInCase || result.scene == Scene::PodsOnly || matchingPods;
+    if (mergePods) {
         if (result.leftBattery.visible && result.rightBattery.visible) {
-            if (result.leftBattery.value < result.rightBattery.value) {
-                result.rightBattery.value = result.leftBattery.value;
-            }
+            result.rightBattery.value =
+                (std::min)(result.leftBattery.value, result.rightBattery.value);
             result.rightBattery.charging =
                 result.leftBattery.charging && result.rightBattery.charging;
-            result.leftBattery = {};
         }
         else if (result.leftBattery.visible) {
             result.rightBattery = result.leftBattery;
-            result.leftBattery = {};
         }
+        result.leftBattery = {};
         result.rightBattery.badge = BatteryBadge::None;
+    }
+
+    if (_state->caseBox.isBothPodsInCase) {
+        result.caseBattery.badge = BatteryBadge::None;
+    }
+    if (result.scene == Scene::PodsOnly) {
         result.caseBattery = {};
     }
     return result;

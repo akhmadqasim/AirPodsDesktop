@@ -21,7 +21,6 @@
 #include <QScreen>
 #include <QCursor>
 #include <QFontMetrics>
-#include <QGraphicsOpacityEffect>
 #include <QPainter>
 #include <QMessageBox>
 #include <QCloseEvent>
@@ -220,17 +219,6 @@ MainWindow::MainWindow(QWidget *parent) : QDialog{parent}
     _ui.layoutAnimation->activate();
     _deviceImage->show();
 
-    for (auto *battery : {_leftBattery, _rightBattery, _caseBattery}) {
-        auto *effect = new QGraphicsOpacityEffect{battery};
-        effect->setOpacity(1.0);
-        battery->setGraphicsEffect(effect);
-        auto *fade = new QPropertyAnimation{effect, "opacity", this};
-        fade->setDuration(800);
-        fade->setEasingCurve(QEasingCurve::InOutSine);
-        fade->setStartValue(0.0);
-        fade->setEndValue(1.0);
-        _batteryFades[battery] = fade;
-    }
 }
 
 void MainWindow::StartUpdateChecks()
@@ -474,14 +462,6 @@ void MainWindow::SetRotating(bool rotating)
     _deviceImage->CrossFadeFrom(lastFrame);
 }
 
-void MainWindow::FadeInBattery(Widget::Battery *widget)
-{
-    if (auto iter = _batteryFades.find(widget); iter != _batteryFades.end()) {
-        iter->second->stop();
-        iter->second->start();
-    }
-}
-
 void MainWindow::BindDevice()
 {
     LOG(Info, "BindDevice");
@@ -600,13 +580,25 @@ void MainWindow::Repaint()
     SetAnimation(presentation.animationModel);
     ApplyScene(presentation.scene);
 
-    const auto applyBattery = [this](Widget::Battery *widget, const BatteryPresentation &battery) {
+    const bool batteriesChanged =
+        !_lastPresentation.has_value() || _lastPresentation->leftBattery != presentation.leftBattery ||
+        _lastPresentation->rightBattery != presentation.rightBattery ||
+        _lastPresentation->caseBattery != presentation.caseBattery;
+    const QRect batteryRow =
+        _ui.podsBatteryContainer->geometry().united(_ui.caseBatteryContainer->geometry());
+    QPixmap before;
+    if (batteriesChanged && _isVisible && _lastPresentation.has_value()) {
+        // Snapshot the row before touching it; the overlay dissolves it over the new layout.
+        _batteryFade->hide();
+        before = grab(batteryRow);
+    }
+
+    const auto applyBattery = [](Widget::Battery *widget, const BatteryPresentation &battery) {
         if (!battery.visible) {
             widget->hide();
             return;
         }
 
-        const bool appearing = widget->isHidden() && _isVisible;
         widget->setCharging(battery.charging);
         widget->setValue(battery.value);
         static_assert(
@@ -614,14 +606,18 @@ void MainWindow::Repaint()
             "BatteryBadge and Widget::Battery::Badge must line up");
         widget->setBadge(static_cast<Widget::Battery::Badge>(battery.badge));
         widget->show();
-        if (appearing) {
-            FadeInBattery(widget);
-        }
     };
 
     applyBattery(_leftBattery, presentation.leftBattery);
     applyBattery(_rightBattery, presentation.rightBattery);
     applyBattery(_caseBattery, presentation.caseBattery);
+
+    if (!before.isNull()) {
+        _ui.podsBatteryContainer->layout()->activate();
+        _ui.caseBatteryContainer->layout()->activate();
+        _batteryFade->Dissolve(before, batteryRow);
+    }
+    _lastPresentation = presentation;
 }
 
 void MainWindow::ApplyTheme()
@@ -810,6 +806,7 @@ void MainWindow::BeginShow(bool fromHidden)
 void MainWindow::hideEvent(QHideEvent *event)
 {
     _isVisible = false;
+    _batteryFade->hide();
     _posAnimation.stop();
     ControlAutoHideTimer(false);
     StopAnimation();

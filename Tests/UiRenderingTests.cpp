@@ -290,17 +290,17 @@ private Q_SLOTS:
 
         // Ring plus label fit the popup's 51 px battery row; the rest of the layout is untouched.
         for (auto *ring : rings) {
-            QVERIFY(ring->isVisibleTo(&window));
             QVERIFY(ring->height() <= 51);
         }
-        // Both pods in the case: L/R badges stay (levels differ), the case glyph is dropped.
-        std::map<Gui::Widget::Battery::Badge, int> badges;
+        // Both pods in the case: one merged pods ring and the case ring, neither labelled.
+        int visible = 0;
         for (auto *ring : rings) {
-            ++badges[ring->getBadge()];
+            if (ring->isVisibleTo(&window)) {
+                ++visible;
+                QCOMPARE(ring->getBadge(), Gui::Widget::Battery::Badge::None);
+            }
         }
-        QCOMPARE(badges[Gui::Widget::Battery::Badge::Left], 1);
-        QCOMPARE(badges[Gui::Widget::Battery::Badge::Right], 1);
-        QCOMPARE(badges[Gui::Widget::Battery::Badge::None], 1);
+        QCOMPARE(visible, 2);
 
         const auto scale = qEnvironmentVariable("QT_SCALE_FACTOR", "system");
         VerifySmoothPopupCorners(&window, QString{"main-window-battery-rings-scale%1.png"}.arg(scale));

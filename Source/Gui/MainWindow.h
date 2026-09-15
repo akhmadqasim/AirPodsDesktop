@@ -39,6 +39,7 @@
 #include "AnimationPlayback.h"
 #include "Widget/AnimationView.h"
 #include "Widget/DeviceImage.h"
+#include "Widget/FadeOverlay.h"
 
 namespace Gui {
 
@@ -86,8 +87,9 @@ private:
     Ui::MainWindow _ui;
 
     QPropertyAnimation _posAnimation{this, "pos"};
-    // Battery rings fade in when they (re)appear, e.g. when merged pods split again.
-    std::map<Widget::Battery *, QPropertyAnimation *> _batteryFades;
+    // The battery row dissolves from its previous look whenever the rings change.
+    Widget::FadeOverlay *_batteryFade = new Widget::FadeOverlay{this};
+    std::optional<MainWindowPresentation> _lastPresentation;
     // Turntable video while both pods rest in the open case; a still render (cross-faded from
     // the last frame) as soon as one is taken out.
     Widget::AnimationView *_animationView;
@@ -121,7 +123,6 @@ private:
     void SetAnimation(std::optional<Core::AirPods::Model> model);
     void PlayAnimation();
     void StopAnimation();
-    void FadeInBattery(Widget::Battery *widget);
     void SetRotating(bool rotating);
     void ApplyScene(Scene scene);
     void BindDevice();

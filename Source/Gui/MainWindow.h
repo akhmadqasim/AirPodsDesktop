@@ -87,7 +87,9 @@ private:
     Ui::MainWindow _ui;
 
     QPropertyAnimation _posAnimation{this, "pos"};
-    // The battery row dissolves from its previous look whenever the rings change.
+    // One fade for the whole scene: picture and battery row leave together, then the new ones
+    // arrive together. The overlay carries the old battery row while the widgets underneath are
+    // already rearranged.
     Widget::FadeOverlay *_batteryFade = new Widget::FadeOverlay{this};
     std::optional<MainWindowPresentation> _lastPresentation;
     // Turntable video while both pods rest in the open case; a still render (cross-faded from
@@ -96,9 +98,11 @@ private:
     AnimationPlayback *_playback;
     Widget::DeviceImage *_deviceImage;
     bool _rotating{false};
-    // Media hand-over: the visible one fades out while it keeps playing, then the other fades in.
-    QVariantAnimation _mediaFade{this};
-    enum class MediaFadePhase { Idle, Out, In } _mediaFadePhase{MediaFadePhase::Idle};
+    QVariantAnimation _sceneFade{this};
+    enum class FadePhase { Idle, Out, In } _fadePhase{FadePhase::Idle};
+    bool _fadeMedia{false};     // the picture takes part in the running fade
+    bool _fadeBatteries{false}; // the battery row takes part in the running fade
+    Widget::DeviceImage::Arrangement _pendingArrangement{Widget::DeviceImage::Arrangement::Spread};
     // Both pods out: the render keeps turning this long, then the case leaves the picture.
     QTimer *_podsOnlyTimer = new QTimer{this};
     QRect _podsRowGeometry;
@@ -127,9 +131,8 @@ private:
     void SetAnimation(std::optional<Core::AirPods::Model> model);
     void PlayAnimation();
     void StopAnimation();
-    void SetRotating(bool rotating);
     void ShowMedia(bool rotating);
-    void StartMediaFade(MediaFadePhase phase);
+    void StartSceneFade(FadePhase phase);
     void SetMediaOpacity(bool rotatingView, qreal opacity);
     qreal MediaOpacity(bool rotatingView) const;
     void ApplyScene(Scene scene);

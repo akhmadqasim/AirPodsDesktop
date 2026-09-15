@@ -18,7 +18,8 @@
 
 #include "FadeOverlay.h"
 
-#include <QEasingCurve>
+#include <algorithm>
+
 #include <QPainter>
 
 namespace Gui::Widget {
@@ -27,65 +28,61 @@ FadeOverlay::FadeOverlay(QWidget *parent) : QWidget{parent}
 {
     setAttribute(Qt::WA_TransparentForMouseEvents);
     setAttribute(Qt::WA_NoSystemBackground);
-    _fade.setStartValue(1.0);
-    _fade.setEndValue(0.0);
-    // Sequential: the snapshot fades out over the window colour, then the new content fades in.
-    _fade.setDuration(1000);
-    _fade.setEasingCurve(QEasingCurve::Linear);
-    connect(&_fade, &QVariantAnimation::valueChanged, this, [this] { update(); });
-    connect(&_fade, &QVariantAnimation::finished, this, [this] {
-        _snapshot = {};
-        hide();
-    });
     hide();
 }
 
-void FadeOverlay::SetDuration(int milliseconds)
+void FadeOverlay::Begin(QPixmap snapshot, const QRect &region)
 {
-    _fade.setDuration(milliseconds);
-}
-
-void FadeOverlay::Dissolve(QPixmap snapshot, const QRect &region)
-{
-    if (snapshot.isNull()) {
-        return;
-    }
-    _fade.stop();
     _snapshot = std::move(snapshot);
+    _snapshotOpacity = 1.0;
+    _coverOpacity = 1.0;
+    _running = true;
     setGeometry(region);
     raise();
     show();
-    _fade.start();
     update();
+}
+
+void FadeOverlay::SetSnapshotOpacity(qreal opacity)
+{
+    _snapshotOpacity = std::clamp(opacity, 0.0, 1.0);
+    update();
+}
+
+void FadeOverlay::SetCoverOpacity(qreal opacity)
+{
+    _coverOpacity = std::clamp(opacity, 0.0, 1.0);
+    update();
+}
+
+void FadeOverlay::Finish()
+{
+    _running = false;
+    _snapshot = {};
+    hide();
 }
 
 bool FadeOverlay::IsRunning() const
 {
-    return _fade.state() == QAbstractAnimation::Running;
+    return _running;
 }
 
 void FadeOverlay::paintEvent(QPaintEvent *)
 {
-    if (_snapshot.isNull()) {
+    if (!_running) {
         return;
     }
-    if (!IsRunning()) {
-        return;
-    }
-    const qreal t = _fade.currentValue().toReal();
-    const QEasingCurve ease{QEasingCurve::InOutSine};
     const QColor cover = parentWidget() ? parentWidget()->palette().color(QPalette::Window)
                                         : palette().color(QPalette::Window);
 
     QPainter painter{this};
-    if (t < 0.5) {
+    if (_coverOpacity > 0.0) {
+        painter.setOpacity(_coverOpacity);
         painter.fillRect(rect(), cover);
-        painter.setOpacity(1.0 - ease.valueForProgress(t * 2.0));
-        painter.drawPixmap(rect(), _snapshot);
     }
-    else {
-        painter.setOpacity(1.0 - ease.valueForProgress(t * 2.0 - 1.0));
-        painter.fillRect(rect(), cover);
+    if (!_snapshot.isNull() && _snapshotOpacity > 0.0) {
+        painter.setOpacity(_snapshotOpacity);
+        painter.drawPixmap(rect(), _snapshot);
     }
 }
 

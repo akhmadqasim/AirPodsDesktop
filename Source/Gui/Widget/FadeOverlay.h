@@ -19,14 +19,14 @@
 #pragma once
 
 #include <QPixmap>
-#include <QVariantAnimation>
 #include <QWidget>
 
 namespace Gui::Widget {
 
-// Cross-fades a region of a window between two arbitrary layouts: snapshot the region, change
-// the widgets underneath, then let the snapshot dissolve on top of the new content. Layout jumps
-// (rings merging, moving) read as one smooth transition instead of a cut.
+// Fades a region of a window between two arbitrary layouts: snapshot the region, change the
+// widgets underneath, then let the snapshot fade out over a cover in the window colour and the
+// cover fade out over the new content. The owner drives both opacities, so the region moves in
+// step with whatever else is fading (the device picture).
 //
 class FadeOverlay : public QWidget
 {
@@ -35,10 +35,13 @@ class FadeOverlay : public QWidget
 public:
     explicit FadeOverlay(QWidget *parent = nullptr);
 
-    void SetDuration(int milliseconds);
-    // `snapshot` is what the region looked like before; the overlay covers `region` (parent
-    // coordinates) and fades out.
-    void Dissolve(QPixmap snapshot, const QRect &region);
+    // `snapshot` is what `region` (parent coordinates) looked like before the change.
+    void Begin(QPixmap snapshot, const QRect &region);
+    // 1 = old look fully visible; 0 = only the cover.
+    void SetSnapshotOpacity(qreal opacity);
+    // 1 = new content hidden behind the cover; 0 = new content fully visible.
+    void SetCoverOpacity(qreal opacity);
+    void Finish();
     bool IsRunning() const;
 
 protected:
@@ -46,7 +49,9 @@ protected:
 
 private:
     QPixmap _snapshot;
-    QVariantAnimation _fade{this};
+    qreal _snapshotOpacity{0.0};
+    qreal _coverOpacity{0.0};
+    bool _running{false};
 };
 
 } // namespace Gui::Widget

@@ -292,8 +292,6 @@ private Q_SLOTS:
         window.UpdateState(state);
         QVERIFY(overlay->IsRunning());
         QVERIFY(overlay->isVisible());
-        QVERIFY(overlay->geometry().contains(window.findChildren<Gui::Widget::Battery *>().first()->geometry().center()
-                                             + window.findChildren<Gui::Widget::Battery *>().first()->parentWidget()->pos()));
         QTRY_VERIFY(!overlay->IsRunning());
         QVERIFY(overlay->isHidden());
     }

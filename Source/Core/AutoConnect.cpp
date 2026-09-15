@@ -99,6 +99,12 @@ void Coordinator::OnStateLost()
 
 void Coordinator::OnDeviceConnectionChanged(bool connected)
 {
+    if (_policy.deviceConnected && !connected) {
+        // Same as a link drop (that signal may arrive after this one): whatever plays here now
+        // must stop and start again before it counts.
+        _policy.linkDroppedAt = Policy::Clock::now();
+        _assumePlaying = true;
+    }
     _policy.deviceConnected = connected;
     Reevaluate();
 }

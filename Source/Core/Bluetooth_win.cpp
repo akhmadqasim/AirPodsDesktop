@@ -18,6 +18,7 @@
 
 #include "Bluetooth_win.h"
 
+#include <cstring>
 #include <thread>
 
 #include "../Logger.h"
@@ -101,7 +102,35 @@ DeviceState Device::GetConnectionState() const
 
 winrt::hstring Device::GetAepId() const
 {
-    return GetProperty<winrt::hstring>(kPropertyAepContainerId, {});
+    // The container id is boxed as a GUID on current Windows builds (a string on older ones).
+    try {
+        const auto &optInfo = GetInfo();
+        if (!optInfo.has_value()) {
+            return {};
+        }
+        const auto boxed = optInfo->Properties().TryLookup(kPropertyAepContainerId);
+        if (!boxed) {
+            return {};
+        }
+        try {
+            return winrt::unbox_value<winrt::hstring>(boxed);
+        }
+        catch (const winrt::hresult_error &) {
+        }
+        const auto guid = winrt::unbox_value<winrt::guid>(boxed);
+        wchar_t buffer[39]{};
+        GUID raw{};
+        static_assert(sizeof(raw) == sizeof(guid));
+        std::memcpy(&raw, &guid, sizeof(raw));
+        if (StringFromGUID2(raw, buffer, 39) == 0) {
+            return {};
+        }
+        return winrt::hstring{buffer};
+    }
+    catch (const OS::Windows::Winrt::Exception &ex) {
+        LOG(Warn, "GetAepId() failed. {}", Helper::ToString(ex));
+    }
+    return {};
 }
 
 void Device::RegisterHandlers()

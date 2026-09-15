@@ -30,6 +30,7 @@
 #include "Source/Gui/MainWindow.h"
 #include "Source/Gui/Widget/Battery.h"
 #include "Source/Gui/Widget/DeviceImage.h"
+#include "Source/Gui/Widget/FadeOverlay.h"
 #include "Source/Gui/SettingsWindow.h"
 #include "Source/Gui/Theme.h"
 #include "Source/Gui/TrayIcon.h"
@@ -264,6 +265,37 @@ private Q_SLOTS:
         QVERIFY(image.IsFading());
         QTRY_VERIFY(!image.IsFading());
         QCOMPARE(image.CurrentComposition(), spread);
+    }
+
+    void MainWindowDissolvesTheBatteryRow()
+    {
+        Gui::MainWindow window;
+        auto *overlay = window.findChild<Gui::Widget::FadeOverlay *>();
+        QVERIFY(overlay != nullptr);
+
+        Core::AirPods::State state;
+        state.model = Core::AirPods::Model::AirPods_Pro_2_USB_C;
+        state.displayName = QStringLiteral("AirPods Pro");
+        state.pods.left.battery = Core::AirPods::Battery{90};
+        state.pods.right.battery = Core::AirPods::Battery{90};
+        state.pods.left.isInCase = state.pods.right.isInCase = true;
+        state.caseBox.isBothPodsInCase = true;
+        state.caseBox.battery = Core::AirPods::Battery{80};
+        window.UpdateState(state);
+        window.Show();
+        QTRY_VERIFY(window.isVisible());
+        QVERIFY(!overlay->IsRunning());
+
+        // One pod out: rings split, the row dissolves from the old look.
+        state.pods.right.isInCase = false;
+        state.caseBox.isBothPodsInCase = false;
+        window.UpdateState(state);
+        QVERIFY(overlay->IsRunning());
+        QVERIFY(overlay->isVisible());
+        QVERIFY(overlay->geometry().contains(window.findChildren<Gui::Widget::Battery *>().first()->geometry().center()
+                                             + window.findChildren<Gui::Widget::Battery *>().first()->parentWidget()->pos()));
+        QTRY_VERIFY(!overlay->IsRunning());
+        QVERIFY(overlay->isHidden());
     }
 
     void MainWindowCentresTheLonePodsRing()

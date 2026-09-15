@@ -648,23 +648,28 @@ void MainWindow::VersionUpdateAvailable(const Core::Update::ReleaseInfo &release
 void MainWindow::Repaint()
 {
     const auto presentation = _viewModel.Present();
+
+    // Snapshot the battery row before anything moves; the overlay then fades that snapshot out
+    // and the new rings in, in step with the media hand-over.
+    const bool batteriesChanged =
+        _lastPresentation.has_value() &&
+        (_lastPresentation->leftBattery != presentation.leftBattery ||
+         _lastPresentation->rightBattery != presentation.rightBattery ||
+         _lastPresentation->caseBattery != presentation.caseBattery ||
+         _lastPresentation->scene != presentation.scene);
+    const QRect batteryRow{
+        _podsRowGeometry.x(), _podsRowGeometry.y(), width() - 2 * _podsRowGeometry.x(),
+        _podsRowGeometry.height()};
+    QPixmap before;
+    if (batteriesChanged && _isVisible) {
+        _batteryFade->hide();
+        before = grab(batteryRow);
+    }
+
     FitDeviceLabelFont(presentation.title);
     ChangeButtonAction(presentation.buttonAction);
     SetAnimation(presentation.animationModel);
     ApplyScene(presentation.scene);
-
-    const bool batteriesChanged =
-        !_lastPresentation.has_value() || _lastPresentation->leftBattery != presentation.leftBattery ||
-        _lastPresentation->rightBattery != presentation.rightBattery ||
-        _lastPresentation->caseBattery != presentation.caseBattery;
-    const QRect batteryRow =
-        _ui.podsBatteryContainer->geometry().united(_ui.caseBatteryContainer->geometry());
-    QPixmap before;
-    if (batteriesChanged && _isVisible && _lastPresentation.has_value()) {
-        // Snapshot the row before touching it; the overlay dissolves it over the new layout.
-        _batteryFade->hide();
-        before = grab(batteryRow);
-    }
 
     const auto applyBattery = [](Widget::Battery *widget, const BatteryPresentation &battery) {
         if (!battery.visible) {
